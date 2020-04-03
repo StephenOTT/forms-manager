@@ -1,5 +1,6 @@
 package formsmanager.hazelcast
 
+import com.hazelcast.collection.IQueue
 import formsmanager.domain.FormSchema
 import formsmanager.ifDebugEnabled
 import formsmanager.validator.FormSubmission
@@ -22,10 +23,7 @@ import io.reactivex.Single
 import io.reactivex.schedulers.Schedulers
 import org.slf4j.LoggerFactory
 import java.util.*
-import java.util.concurrent.Callable
-import java.util.concurrent.ExecutorService
-import java.util.concurrent.Future
-import java.util.concurrent.TimeUnit
+import java.util.concurrent.*
 import javax.inject.Singleton
 import kotlin.reflect.KClass
 
@@ -79,7 +77,7 @@ class HazelcastConsumerAdvice(
             //@TODO add qualifier support
             val instanceBean = beanContext.findBean(beanDefinition.beanType).orElseThrow { IllegalStateException("Unable to find bean instance") }
 
-            qManager.createQueueConsumer(qName, taskType, method, instanceBean).subscribeOn(Schedulers.io()).subscribe()
+            qManager.createQueueConsumer(qName, taskType, method, instanceBean)
             println("startup done")
         }
     }
@@ -96,7 +94,7 @@ class QueueManager(
         private val log = LoggerFactory.getLogger(QueueManager::class.java)
     }
 
-    fun <T : Any> createQueueConsumer(qName: String, taskType: KClass<T>, method: ExecutableMethod<*, *>, instanceBean: Any): Observable<T> {
+    fun <T : Any> createQueueConsumer(qName: String, taskType: KClass<T>, method: ExecutableMethod<*, *>, instanceBean: Any) {
         log.ifDebugEnabled { "Starting Hazelcast Queue Consumer for $qName for ${taskType.qualifiedName}" }
         val queue = hazelcastJet.jet.hazelcastInstance.getQueue<T>(qName)
 
@@ -104,29 +102,50 @@ class QueueManager(
                 UUID.randomUUID(), null, "sample",
                 FormSubmission(FormSchema("12", listOf(mapOf())),
                         FormSubmissionData(mapOf(), null))
-        ) as T
-        )
+        ) as T)
 
         queue.put(TaskWrapper<FormSubmission>(
                 UUID.randomUUID(), null, "sample",
                 FormSubmission(FormSchema("12", listOf(mapOf())),
                         FormSubmissionData(mapOf(), null))
-        ) as T
-        )
+        ) as T)
 
-        return Observable.fromCallable {
-            queue.take()
-        }.doOnSubscribe {
-            log.ifDebugEnabled { "Starting take() for $qName for ${taskType.qualifiedName}" }
-        }.doOnNext {
-            log.ifDebugEnabled { "Task taken from queue $qName for ${taskType.qualifiedName}: $it" }
-            println("GOt a Object!")
-            println(it::class.qualifiedName)
+        QueueWorker(queue,qName,taskType,mb)
+    }
+}
 
-            mb.publish("form-submission-validation"){
-                MessageWrapper(message = (it as TaskWrapper<FormSubmission>))
-            }
-        }.repeat() // @TODO add subject observer to stop it.
+class QueueWorker(
+        val queue: IQueue<*>,
+        val qName: String,
+        val taskType: KClass<*>,
+        val mb: StandardMessageBusManager
+){
+    init {
+        start().observeOn(Schedulers.io())
+                .subscribeOn(Schedulers.io())
+                .subscribe() // @TODO add subject observer to stop it.
     }
 
+    companion object{
+        private val log = LoggerFactory.getLogger(QueueWorker::class.java)
+    }
+
+    private fun start(): Observable<*>{
+        return Observable.fromCallable {
+
+        }
+//        return Observable.fromCallable {
+//            queue.take()
+//        }.doOnSubscribe {
+//            log.ifDebugEnabled { "Starting take() for $qName for ${taskType.qualifiedName}" }
+//        }.doOnNext {
+//            log.ifDebugEnabled { "Task taken from queue $qName for ${taskType.qualifiedName}: $it" }
+//            println("GOt a Object!")
+//            println(it::class.qualifiedName)
+//
+//            mb.publish("form-submission-validation"){
+//                MessageWrapper(message = (it as TaskWrapper<FormSubmission>))
+//            }
+//        }.repeat()
+    }
 }

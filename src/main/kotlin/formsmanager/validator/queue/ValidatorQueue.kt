@@ -6,28 +6,13 @@ import com.hazelcast.nio.serialization.ByteArraySerializer
 import formsmanager.hazelcast.StandardMessageBusManager
 import formsmanager.validator.FormSubmission
 import io.micronaut.context.annotation.Context
+import io.micronaut.context.event.ApplicationEventListener
+import io.micronaut.discovery.event.ServiceStartedEvent
 import io.micronaut.jackson.JacksonConfiguration
 import io.micronaut.jackson.ObjectMapperFactory
 import java.util.*
 import javax.annotation.PostConstruct
 import javax.inject.Singleton
-
-
-@Singleton
-@Context
-class ValidatorProcessor(
-        private val mb: StandardMessageBusManager
-){
-    @PostConstruct
-    fun consume(){
-        println("setting up consumer!!")
-        mb.consumer<FormSubmission>("form-submission-validation"){
-            println("consumed received!!!")
-            println(it.messageObject.message.toString())
-        }
-    }
-}
-
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY)
 interface HazelcastTransportable {

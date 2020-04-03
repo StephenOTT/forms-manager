@@ -12,11 +12,11 @@ import javax.inject.Singleton
  * Message wrapper for sending HazelcastTransportable messages, typically through a ITopic
  */
 data class MessageWrapper<M : HazelcastTransportable>(
+        val message: M,
         val correlationId: UUID = UUID.randomUUID(),
         val replyAddress: UUID? = null,
         val messageType: String? = null,
-        val headers: Map<String, String> = mapOf(),
-        val message: M
+        val headers: Map<String, String> = mapOf()
 ) : HazelcastTransportable
 
 /**
@@ -35,7 +35,7 @@ class StandardMessageBusManager(
     fun <M: HazelcastTransportable> consumer(address: String, receiveAction: (message: Message<MessageWrapper<M>>) -> Unit) {
         (topics.computeIfAbsent(address) {
             jet.jet.getReliableTopic(address)
-        } as ITopic<MessageWrapper<M>>)
+        } as ITopic<MessageWrapper<M>>) // @TODO Add check for bad casting / partial casting (deep objects)
                 .addMessageListener {
                     receiveAction.invoke(it)
                 }
