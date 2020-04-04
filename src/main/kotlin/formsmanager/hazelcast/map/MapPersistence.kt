@@ -1,4 +1,4 @@
-package formsmanager.hazelcast
+package formsmanager.hazelcast.map
 
 import com.hazelcast.map.MapStore
 import formsmanager.ifDebugEnabled

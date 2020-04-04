@@ -1,8 +1,9 @@
-package formsmanager.hazelcast
+package formsmanager.hazelcast.map
 
 import formsmanager.exception.CrudOperationException
 import formsmanager.exception.NotFoundException
 import formsmanager.exception.SomethingWentWrongException
+import formsmanager.hazelcast.HazelcastJet
 import io.reactivex.Single
 
 open class HazelcastCrudRepository<K : Any, O : CrudableObject<K>>(

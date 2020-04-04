@@ -1,70 +1,35 @@
-package formsmanager.hazelcast
+package formsmanager.hazelcast.annotation
 
-import com.hazelcast.collection.IQueue
 import formsmanager.domain.FormSchema
+import formsmanager.hazelcast.HazelcastJet
+import formsmanager.hazelcast.topic.StandardMessageBusManager
 import formsmanager.ifDebugEnabled
 import formsmanager.validator.FormSubmission
 import formsmanager.validator.FormSubmissionData
+import formsmanager.hazelcast.queue.QueueWorker
 import formsmanager.validator.queue.TaskWrapper
 import io.micronaut.context.BeanContext
-import io.micronaut.context.annotation.Bean
-import io.micronaut.context.annotation.DefaultScope
-import io.micronaut.context.annotation.Executable
-import io.micronaut.context.annotation.Parallel
 import io.micronaut.context.processor.ExecutableMethodProcessor
 import io.micronaut.core.annotation.AnnotationValue
 import io.micronaut.inject.BeanDefinition
 import io.micronaut.inject.ExecutableMethod
-import io.micronaut.scheduling.executor.ExecutorConfiguration
-import io.micronaut.scheduling.executor.ExecutorFactory
-import io.reactivex.Completable
-import io.reactivex.Observable
-import io.reactivex.Single
-import io.reactivex.schedulers.Schedulers
 import org.slf4j.LoggerFactory
 import java.util.*
-import java.util.concurrent.*
 import javax.inject.Singleton
 import kotlin.reflect.KClass
 
-@HazelcastConsumer
-class MyConsumer {
-
-    @Queue("form-schemas-validator")
-    fun myQueue1(task: TaskWrapper<FormSubmission>) {
-        println("dogs!!!!")
-    }
-}
-
-
-@MustBeDocumented
-@Retention(AnnotationRetention.RUNTIME)
-@Target(AnnotationTarget.CLASS)
-@Bean
-@DefaultScope(Singleton::class)
-@Executable(processOnStartup = true)
-@Parallel
-annotation class HazelcastConsumer {}
-
-@MustBeDocumented
-@Retention(AnnotationRetention.RUNTIME)
-@Target(AnnotationTarget.FUNCTION)
-annotation class Queue(
-        val name: String
-) {}
-
 @Singleton
-class HazelcastConsumerAdvice(
+class HazelcastAnnotationProcessor(
         private val beanContext: BeanContext,
         private val qManager: QueueManager
-) : ExecutableMethodProcessor<HazelcastConsumer>, AutoCloseable {
+) : ExecutableMethodProcessor<Hazelcast>, AutoCloseable {
 
     override fun close() {
         TODO("Not yet implemented")
     }
 
     override fun process(beanDefinition: BeanDefinition<*>, method: ExecutableMethod<*, *>) {
-        val qAnnotation: AnnotationValue<*>? = method.getAnnotation(Queue::class.java)
+        val qAnnotation: AnnotationValue<*>? = method.getAnnotation(QueueConsumer::class.java)
 
         if (qAnnotation != null) {
             val qName = qAnnotation.getRequiredValue("name", String::class.java)
@@ -110,42 +75,6 @@ class QueueManager(
                         FormSubmissionData(mapOf(), null))
         ) as T)
 
-        QueueWorker(queue,qName,taskType,mb)
-    }
-}
-
-class QueueWorker(
-        val queue: IQueue<*>,
-        val qName: String,
-        val taskType: KClass<*>,
-        val mb: StandardMessageBusManager
-){
-    init {
-        start().observeOn(Schedulers.io())
-                .subscribeOn(Schedulers.io())
-                .subscribe() // @TODO add subject observer to stop it.
-    }
-
-    companion object{
-        private val log = LoggerFactory.getLogger(QueueWorker::class.java)
-    }
-
-    private fun start(): Observable<*>{
-        return Observable.fromCallable {
-
-        }
-//        return Observable.fromCallable {
-//            queue.take()
-//        }.doOnSubscribe {
-//            log.ifDebugEnabled { "Starting take() for $qName for ${taskType.qualifiedName}" }
-//        }.doOnNext {
-//            log.ifDebugEnabled { "Task taken from queue $qName for ${taskType.qualifiedName}: $it" }
-//            println("GOt a Object!")
-//            println(it::class.qualifiedName)
-//
-//            mb.publish("form-submission-validation"){
-//                MessageWrapper(message = (it as TaskWrapper<FormSubmission>))
-//            }
-//        }.repeat()
+        QueueWorker(queue, qName, taskType, mb)
     }
 }

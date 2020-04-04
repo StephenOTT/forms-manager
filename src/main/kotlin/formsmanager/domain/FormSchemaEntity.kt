@@ -1,6 +1,6 @@
 package formsmanager.domain
 
-import formsmanager.hazelcast.CrudableObject
+import formsmanager.hazelcast.map.CrudableObject
 import formsmanager.respository.FormSchemaEntityWrapper
 import java.io.Serializable
 import java.time.Instant

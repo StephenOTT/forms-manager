@@ -1,23 +1,13 @@
-package formsmanager.hazelcast
+package formsmanager.hazelcast.topic
 
 import com.hazelcast.topic.ITopic
 import com.hazelcast.topic.Message
+import formsmanager.hazelcast.HazelcastJet
 import formsmanager.validator.queue.HazelcastTransportable
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentMap
 import javax.inject.Singleton
-
-/**
- * Message wrapper for sending HazelcastTransportable messages, typically through a ITopic
- */
-data class MessageWrapper<M : HazelcastTransportable>(
-        val message: M,
-        val correlationId: UUID = UUID.randomUUID(),
-        val replyAddress: UUID? = null,
-        val messageType: String? = null,
-        val headers: Map<String, String> = mapOf()
-) : HazelcastTransportable
 
 /**
  * Generic Standard Message Bus for sending HazelcastTransportable based messages wrapped in a MessageWrapper
@@ -27,7 +17,7 @@ class StandardMessageBusManager(
         private val jet: HazelcastJet
 ) {
 
-    val topics: ConcurrentMap<String, ITopic<MessageWrapper<out HazelcastTransportable>>> = ConcurrentHashMap()
+    val topics: ConcurrentMap<String, ITopic<MessageWrapper<HazelcastTransportable>>> = ConcurrentHashMap()
 
     /**s
      * Create a consume for a Reliable Topic address

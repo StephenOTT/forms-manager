@@ -3,15 +3,10 @@ package formsmanager.validator.queue
 import com.fasterxml.jackson.annotation.JsonTypeInfo
 import com.fasterxml.jackson.dataformat.smile.SmileFactory
 import com.hazelcast.nio.serialization.ByteArraySerializer
-import formsmanager.hazelcast.StandardMessageBusManager
-import formsmanager.validator.FormSubmission
 import io.micronaut.context.annotation.Context
-import io.micronaut.context.event.ApplicationEventListener
-import io.micronaut.discovery.event.ServiceStartedEvent
 import io.micronaut.jackson.JacksonConfiguration
 import io.micronaut.jackson.ObjectMapperFactory
 import java.util.*
-import javax.annotation.PostConstruct
 import javax.inject.Singleton
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY)
