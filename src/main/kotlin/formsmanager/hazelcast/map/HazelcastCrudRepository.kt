@@ -3,20 +3,20 @@ package formsmanager.hazelcast.map
 import formsmanager.exception.CrudOperationException
 import formsmanager.exception.NotFoundException
 import formsmanager.exception.SomethingWentWrongException
-import formsmanager.hazelcast.HazelcastJet
+import formsmanager.hazelcast.HazelcastJetManager
 import io.reactivex.Single
 
 open class HazelcastCrudRepository<K : Any, O : CrudableObject<K>>(
         val mapName: String,
-        private val jetService: HazelcastJet
+        private val jetService: HazelcastJetManager
 ) {
 
     /**
      * Data source for item in a Hazelcast Jet IMap.
      */
     val mapService by lazy {
-        // implemented as a lazy to accomodate circular deps that cause deadlock: https://github.com/micronaut-projects/micronaut-data/issues/464
-        jetService.jet.getMap<K, O>(mapName)
+        // implemented as a lazy to accommodate circular deps that cause deadlock: https://github.com/micronaut-projects/micronaut-data/issues/464
+        jetService.defaultInstance.getMap<K, O>(mapName)
     }
 
     /**

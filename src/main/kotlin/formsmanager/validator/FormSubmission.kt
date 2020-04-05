@@ -2,7 +2,7 @@ package formsmanager.validator
 
 import com.fasterxml.jackson.annotation.JsonInclude
 import formsmanager.domain.FormSchema
-import formsmanager.validator.queue.HazelcastTransportable
+import formsmanager.hazelcast.HazelcastTransportable
 
 data class FormSubmission(
         val schema: FormSchema,

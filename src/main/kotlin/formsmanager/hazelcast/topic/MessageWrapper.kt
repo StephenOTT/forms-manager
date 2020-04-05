@@ -1,6 +1,6 @@
 package formsmanager.hazelcast.topic
 
-import formsmanager.validator.queue.HazelcastTransportable
+import formsmanager.hazelcast.HazelcastTransportable
 import java.util.*
 
 /**

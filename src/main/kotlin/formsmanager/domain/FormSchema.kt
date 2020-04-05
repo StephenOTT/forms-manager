@@ -1,6 +1,6 @@
 package formsmanager.domain
 
-import formsmanager.validator.queue.HazelcastTransportable
+import formsmanager.hazelcast.HazelcastTransportable
 
 data class FormSchema(
         val display: String,

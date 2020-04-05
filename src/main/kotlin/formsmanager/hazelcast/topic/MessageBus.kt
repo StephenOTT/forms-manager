@@ -2,8 +2,8 @@ package formsmanager.hazelcast.topic
 
 import com.hazelcast.topic.ITopic
 import com.hazelcast.topic.Message
-import formsmanager.hazelcast.HazelcastJet
-import formsmanager.validator.queue.HazelcastTransportable
+import formsmanager.hazelcast.HazelcastJetManager
+import formsmanager.hazelcast.HazelcastTransportable
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentMap
@@ -14,7 +14,7 @@ import javax.inject.Singleton
  */
 @Singleton
 class StandardMessageBusManager(
-        private val jet: HazelcastJet
+        private val jet: HazelcastJetManager
 ) {
 
     val topics: ConcurrentMap<String, ITopic<MessageWrapper<HazelcastTransportable>>> = ConcurrentHashMap()
@@ -24,7 +24,7 @@ class StandardMessageBusManager(
      */
     fun <M: HazelcastTransportable> consumer(address: String, receiveAction: (message: Message<MessageWrapper<M>>) -> Unit) {
         (topics.computeIfAbsent(address) {
-            jet.jet.getReliableTopic(address)
+            jet.defaultInstance.getReliableTopic(address)
         } as ITopic<MessageWrapper<M>>) // @TODO Add check for bad casting / partial casting (deep objects)
                 .addMessageListener {
                     receiveAction.invoke(it)
@@ -36,7 +36,7 @@ class StandardMessageBusManager(
      */
     fun <T: HazelcastTransportable> publish(address: String, body: () -> MessageWrapper<T>) {
         (topics.computeIfAbsent(address) {
-            jet.jet.getReliableTopic(address)
+            jet.defaultInstance.getReliableTopic(address)
         } as ITopic<MessageWrapper<T>>)
                 .publish(body.invoke())
     }

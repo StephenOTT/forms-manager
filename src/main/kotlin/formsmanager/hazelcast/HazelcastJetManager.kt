@@ -7,8 +7,6 @@ import com.hazelcast.jet.config.JetConfig
 import com.hazelcast.map.MapStore
 import formsmanager.respository.FormSchemasMapStore
 import formsmanager.respository.FormsMapStore
-import formsmanager.validator.queue.HazelcastTransportable
-import formsmanager.validator.queue.HazelcastTransportableSmileSerializer
 import io.micronaut.context.ApplicationContext
 import io.micronaut.context.annotation.Context
 import org.slf4j.LoggerFactory
@@ -17,13 +15,13 @@ import javax.inject.Singleton
 
 @Singleton
 @Context
-class HazelcastJet(private val hzConfig: HzConfig) {
+class HazelcastJetManager(private val hzConfig: HzConfig) {
 
     companion object{
-        private val log = LoggerFactory.getLogger(HzConfig::class.java)
+        private val log = LoggerFactory.getLogger(HazelcastJetManager::class.java)
     }
 
-    lateinit var jet: JetInstance
+    lateinit var defaultInstance: JetInstance
 
     @PostConstruct
     fun initialize(){
@@ -31,7 +29,7 @@ class HazelcastJet(private val hzConfig: HzConfig) {
         val jconfig = JetConfig()
         jconfig.hazelcastConfig = hzConfig.generateHzConfig()
 
-        jet = Jet.newJetInstance(jconfig)
+        defaultInstance = Jet.newJetInstance(jconfig)
     }
 }
 

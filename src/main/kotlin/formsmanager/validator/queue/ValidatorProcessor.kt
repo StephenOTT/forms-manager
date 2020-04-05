@@ -1,24 +1,21 @@
 package formsmanager.validator.queue
 
-import formsmanager.hazelcast.annotation.Hazelcast
-import formsmanager.hazelcast.HazelcastJet
-import formsmanager.hazelcast.topic.StandardMessageBusManager
+import formsmanager.hazelcast.HazelcastJetManager
+import formsmanager.hazelcast.annotation.HazelcastJet
 import formsmanager.hazelcast.annotation.QueueConsumer
-import formsmanager.hazelcast.topic.MessageWrapper
-import formsmanager.ifDebugEnabled
+import formsmanager.hazelcast.queue.ItemWrapper
+import formsmanager.hazelcast.topic.StandardMessageBusManager
 import formsmanager.validator.FormSubmission
 import io.micronaut.context.event.ApplicationEventListener
 import io.micronaut.discovery.event.ServiceStartedEvent
-import io.reactivex.Flowable
-import io.reactivex.schedulers.Schedulers
 import org.slf4j.LoggerFactory
 import javax.inject.Singleton
 
-@Hazelcast
+@HazelcastJet
 class ValidatorProcessorConsumer {
 
     @QueueConsumer("form-schemas-validator")
-    fun myQueue1(task: TaskWrapper<FormSubmission>) {
+    fun myQueue1(task: ItemWrapper<FormSubmission>) {
         println("dogs!!!!")
     }
 }
@@ -26,7 +23,7 @@ class ValidatorProcessorConsumer {
 @Singleton
 class ValidatorProcessor(
         private val mb: StandardMessageBusManager,
-        private val hazelcastJet: HazelcastJet
+        private val jet: HazelcastJetManager
 ) : ApplicationEventListener<ServiceStartedEvent> {
 
     companion object {
@@ -34,7 +31,7 @@ class ValidatorProcessor(
     }
 
     override fun onApplicationEvent(event: ServiceStartedEvent?) {
-        val queue = hazelcastJet.jet.hazelcastInstance.getQueue<TaskWrapper<FormSubmission>>("form-schemas-validator")
+        val queue = jet.defaultInstance.hazelcastInstance.getQueue<ItemWrapper<FormSubmission>>("form-schemas-validator")
 
         println("setting up consumer!!")
         mb.consumer<FormSubmission>("form-submission-validation") {
@@ -43,19 +40,5 @@ class ValidatorProcessor(
             println(it.messageObject.message.schema.display)
             println("---->Consume done")
         }
-
-        Flowable.fromCallable {
-            queue.take() // @TODO Add error handling
-        }.doOnSubscribe {
-            log.ifDebugEnabled { "Starting take()" }
-
-        }.doOnNext {
-            log.ifDebugEnabled { "Task taken from queue" }
-            println("Got a Object! ${it::class.qualifiedName}")
-
-            mb.publish("form-submission-validation") {
-                MessageWrapper(it.task)
-            }
-        }.repeat().observeOn(Schedulers.io()).subscribeOn(Schedulers.io()).subscribe() // @TODO add subject observer to stop it.
     }
 }

@@ -1,7 +1,6 @@
 package formsmanager.exception
 
 import io.micronaut.http.HttpStatus
-import java.lang.RuntimeException
 
 open class FormManagerException(override val message: String,
                                 cause: Throwable? = null,

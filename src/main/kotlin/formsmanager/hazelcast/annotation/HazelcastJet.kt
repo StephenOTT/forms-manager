@@ -13,6 +13,6 @@ import javax.inject.Singleton
 @DefaultScope(Singleton::class)
 @Executable(processOnStartup = true)
 @Parallel
-annotation class Hazelcast(
+annotation class HazelcastJet(
         val value: String = "default"
 ) {}

@@ -2,7 +2,7 @@ package formsmanager.validator
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.databind.DeserializationFeature
-import formsmanager.validator.queue.HazelcastTransportable
+import formsmanager.hazelcast.HazelcastTransportable
 import io.micronaut.http.HttpResponse
 import io.micronaut.http.annotation.Body
 import io.micronaut.http.annotation.Post

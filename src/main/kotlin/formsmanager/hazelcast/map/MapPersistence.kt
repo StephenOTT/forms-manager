@@ -1,9 +1,9 @@
 package formsmanager.hazelcast.map
 
 import com.hazelcast.map.MapStore
+import formsmanager.hazelcast.HazelcastTransportable
+import formsmanager.hazelcast.JacksonSmileSerialization
 import formsmanager.ifDebugEnabled
-import formsmanager.validator.queue.HazelcastTransportable
-import formsmanager.validator.queue.JacksonSmileMapper
 import io.micronaut.core.convert.ConversionContext
 import io.micronaut.core.convert.TypeConverter
 import io.micronaut.data.annotation.TypeDef
@@ -36,7 +36,7 @@ abstract class MapStoreItemWrapperEntity<V: CrudableObject<UUID>>(
 
 @Singleton
 class CrudableObjectByteArrayConverter(
-        private val smileMapper: JacksonSmileMapper
+        private val smileMapper: JacksonSmileSerialization
 ) : TypeConverter<CrudableObject<*>, ByteArray> {
 
     private val mapper = smileMapper.smileMapper
@@ -48,7 +48,7 @@ class CrudableObjectByteArrayConverter(
 
 @Singleton
 class HazelcastTransportableByteArrayConverter(
-        private val smileMapper: JacksonSmileMapper
+        private val smileMapper: JacksonSmileSerialization
 ) : TypeConverter<HazelcastTransportable, ByteArray> {
 
     private val mapper = smileMapper.smileMapper
