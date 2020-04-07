@@ -1,8 +1,8 @@
 package formsmanager.hazelcast.map
 
 import com.hazelcast.map.MapStore
-import formsmanager.hazelcast.HazelcastTransportable
-import formsmanager.hazelcast.JacksonSmileSerialization
+import formsmanager.hazelcast.serialization.HazelcastTransportable
+import formsmanager.hazelcast.serialization.JacksonSmileSerialization
 import formsmanager.ifDebugEnabled
 import io.micronaut.core.convert.ConversionContext
 import io.micronaut.core.convert.TypeConverter

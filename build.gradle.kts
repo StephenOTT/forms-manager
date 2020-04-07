@@ -47,7 +47,7 @@ dependencies {
     implementation("io.micronaut:micronaut-runtime")
     implementation("io.micronaut:micronaut-http-server-netty")
     implementation("io.micronaut:micronaut-http-client")
-    runtimeOnly("com.fasterxml.jackson.module:jackson-module-kotlin:2.9.9")
+    runtimeOnly("com.fasterxml.jackson.module:jackson-module-kotlin:2.10.3")
     runtimeOnly("ch.qos.logback:logback-classic:1.2.3")
 
     testImplementation("org.junit.jupiter:junit-jupiter-api")
@@ -63,7 +63,7 @@ dependencies {
     runtimeOnly("io.micronaut.configuration:micronaut-jdbc-hikari")
     compileOnly("jakarta.persistence:jakarta.persistence-api:2.2.2")
 
-    implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-smile:2.9.9")
+    implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-smile:2.10.3")
 
     
 }

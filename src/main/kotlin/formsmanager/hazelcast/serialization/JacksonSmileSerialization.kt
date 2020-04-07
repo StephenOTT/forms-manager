@@ -1,4 +1,4 @@
-package formsmanager.hazelcast
+package formsmanager.hazelcast.serialization
 
 import com.fasterxml.jackson.dataformat.smile.SmileFactory
 import io.micronaut.context.annotation.Context

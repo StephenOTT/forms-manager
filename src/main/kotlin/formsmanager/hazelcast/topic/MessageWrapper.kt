@@ -1,15 +1,17 @@
 package formsmanager.hazelcast.topic
 
-import formsmanager.hazelcast.HazelcastTransportable
+import com.fasterxml.jackson.annotation.JsonTypeInfo
+import formsmanager.hazelcast.serialization.HazelcastTransportable
 import java.util.*
 
 /**
  * Message wrapper for sending HazelcastTransportable messages, typically through a ITopic
  */
-data class MessageWrapper<M : HazelcastTransportable>(
+data class MessageWrapper<M: Any>(
+        @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.EXTERNAL_PROPERTY, property = "messageType")
         val message: M,
         val correlationId: UUID = UUID.randomUUID(),
-        val replyAddress: UUID? = null,
-        val messageType: String? = null,
+        val replyAddress: String? = null,
+        val messageType: String = message::class.qualifiedName!!,
         val headers: Map<String, String> = mapOf()
 ) : HazelcastTransportable

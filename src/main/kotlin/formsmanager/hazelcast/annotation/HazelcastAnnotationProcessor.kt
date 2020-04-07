@@ -1,23 +1,24 @@
 package formsmanager.hazelcast.annotation
 
-import formsmanager.hazelcast.HazelcastTransportable
-import formsmanager.hazelcast.queue.QueueManager
 import io.micronaut.context.BeanContext
 import io.micronaut.context.processor.ExecutableMethodProcessor
 import io.micronaut.core.annotation.AnnotationValue
 import io.micronaut.inject.BeanDefinition
 import io.micronaut.inject.ExecutableMethod
+import org.slf4j.LoggerFactory
 import javax.inject.Singleton
-import kotlin.reflect.KClass
 
 @Singleton
 class HazelcastAnnotationProcessor(
-        private val beanContext: BeanContext,
-        private val qManager: QueueManager
-) : ExecutableMethodProcessor<formsmanager.hazelcast.annotation.HazelcastJet>, AutoCloseable {
+        private val beanContext: BeanContext
+) : ExecutableMethodProcessor<HazelcastJet>, AutoCloseable {
 
     override fun close() {
-        TODO("Not yet implemented")
+
+    }
+
+    companion object {
+        private val log = LoggerFactory.getLogger(HazelcastAnnotationProcessor::class.java)
     }
 
     override fun process(beanDefinition: BeanDefinition<*>, method: ExecutableMethod<*, *>) {
@@ -29,16 +30,20 @@ class HazelcastAnnotationProcessor(
             val arguments = method.arguments
             require(arguments.size == 1, lazyMessage = { "Queue methods must only have a argument of the Task type being returned" })
 
-            val taskType = arguments.first().type::class as KClass<HazelcastTransportable>
+//            val taskType = arguments.first().type::class as KClass<ItemWrapper<*>>
 
             //@TODO add qualifier support
-            val instanceBean = beanContext.findBean(beanDefinition.beanType).orElseThrow { IllegalStateException("Unable to find bean instance") }
-            val eMethod = method as ExecutableMethod<Any, Unit>
+//            val instanceBean = beanContext.findBean(beanDefinition.beanType).orElseThrow { IllegalStateException("Unable to find bean instance") }
+//            val eMethod = method as ExecutableMethod<Any, Unit>
+//
+//            log.ifDebugEnabled { "Setting up consumer!!" }
+//
+//            qManager.consumer(taskType, qName)
+//                    .subscribeOn(Schedulers.io())
+//                    .forEach {
+//                        eMethod.invoke(instanceBean, it)
+//                    }
 
-            qManager.consumer(taskType, qName){
-                eMethod.invoke(instanceBean, it)
-            }
-            println("startup done")
         }
     }
 }

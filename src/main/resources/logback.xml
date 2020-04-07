@@ -12,6 +12,7 @@
 <!--    <logger name="com.hazelcast" level="trace" />-->
 <!--    <logger name="io.micronaut.data" level="trace" />-->
 <!--    <logger name="com.zaxxer" level="trace" />-->
+        <logger name="formsmanager" level="debug" />
 
     <root level="info">
         <appender-ref ref="STDOUT" />

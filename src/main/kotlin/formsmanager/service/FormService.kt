@@ -2,14 +2,14 @@ package formsmanager.service
 
 import formsmanager.domain.FormEntity
 import formsmanager.domain.FormSchemaEntity
+import formsmanager.hazelcast.task.TaskManager
+import formsmanager.ifDebugEnabled
 import formsmanager.respository.FormHazelcastRepository
 import formsmanager.respository.FormSchemaHazelcastRepository
-import formsmanager.validator.FormSubmission
-import formsmanager.validator.FormValidationException
-import formsmanager.validator.FormValidatorClient
-import formsmanager.validator.ValidationResponseInvalid
+import formsmanager.validator.*
 import io.micronaut.http.client.exceptions.HttpClientResponseException
 import io.reactivex.Single
+import org.slf4j.LoggerFactory
 import java.util.*
 import javax.inject.Singleton
 
@@ -17,8 +17,13 @@ import javax.inject.Singleton
 class FormService(
         private val formHazelcastRepository: FormHazelcastRepository,
         private val formSchemaHazelcastRepository: FormSchemaHazelcastRepository,
-        private val formValidatorClient: FormValidatorClient
+        private val formValidatorClient: FormValidatorClient,
+        private val taskManager: TaskManager
 ) {
+
+    companion object {
+        val log = LoggerFactory.getLogger(FormService::class.java)
+    }
 
     /**
      * Create/insert a Form
@@ -130,5 +135,26 @@ class FormService(
                 }.map {
                     it.body()!!.processed_submission
                 }
+    }
+
+    fun validationFormSubmissionAsTask(formSubmission: FormSubmission): Single<ValidationResponseValid>{
+        return taskManager.submit("form-submission-validator",
+        FormSubmissionValidatorTask(formSubmission)).map {
+            when (it) {
+                is ValidationResponseValid -> {
+                    log.ifDebugEnabled { "Got A Validation Success result: $it"  }
+                    it
+
+                }
+                is ValidationResponseInvalid -> {
+                    log.ifDebugEnabled { "Got A Validation Failure result: $it"  }
+                    throw FormValidationException(it)
+
+                }
+                else -> {
+                    throw IllegalStateException("Received a unknown Validation Response!!")
+                }
+            }
+        }
     }
 }

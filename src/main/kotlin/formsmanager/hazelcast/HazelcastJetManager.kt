@@ -5,6 +5,7 @@ import com.hazelcast.jet.Jet
 import com.hazelcast.jet.JetInstance
 import com.hazelcast.jet.config.JetConfig
 import com.hazelcast.map.MapStore
+import formsmanager.hazelcast.serialization.HazelcastTransportableSmileSerializer
 import formsmanager.respository.FormSchemasMapStore
 import formsmanager.respository.FormsMapStore
 import io.micronaut.context.ApplicationContext
@@ -33,6 +34,9 @@ class HazelcastJetManager(private val hzConfig: HzConfig) {
     }
 }
 
+
+
+
 @Singleton
 class HzConfig(
         private val hazelcastMicronautManagedContext: ManagedContext,
@@ -49,12 +53,17 @@ class HzConfig(
     fun generateHzConfig():Config{
         val hConfig:Config = ClasspathYamlConfig("hazelcast.yml")
 
-        val smileConfig: SerializerConfig = SerializerConfig()
-        smileConfig.implementation = smileSerializer
-        smileConfig.typeClass = HazelcastTransportable::class.java
+//        val smileConfig: SerializerConfig = SerializerConfig()
+//        smileConfig.implementation = smileSerializer
+//        smileConfig.typeClass = HazelcastTransportable::class.java
 
         val serializationConfig = SerializationConfig()
-        serializationConfig.addSerializerConfig(smileConfig)
+//        serializationConfig.addSerializerConfig(smileConfig)
+
+        val globalSerializer = GlobalSerializerConfig()
+//                .setOverrideJavaSerialization(true)
+                .setImplementation(smileSerializer)
+        serializationConfig.globalSerializerConfig = globalSerializer
 
         hConfig.serializationConfig = serializationConfig
 

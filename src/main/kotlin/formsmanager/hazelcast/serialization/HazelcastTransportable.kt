@@ -1,4 +1,4 @@
-package formsmanager.hazelcast
+package formsmanager.hazelcast.serialization
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo
 

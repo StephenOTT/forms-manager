@@ -2,7 +2,6 @@ package formsmanager.domain
 
 import formsmanager.hazelcast.map.CrudableObject
 import formsmanager.respository.FormEntityWrapper
-import java.io.Serializable
 import java.util.*
 
 data class FormEntity(
@@ -11,7 +10,7 @@ data class FormEntity(
         var name: String,
         var description: String? = null,
         var defaultSchema: UUID? = null
-): CrudableObject<UUID>, Serializable {
+): CrudableObject<UUID> {
     override fun toEntity(): FormEntityWrapper {
         return FormEntityWrapper(id, this::class.qualifiedName!!, this)
     }
