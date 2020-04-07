@@ -14,3 +14,13 @@ questions
 todo:
 
 1. Add Avro support
+
+
+Python execution service:
+
+https://groups.google.com/forum/#!topic/hazelcast/jGZcxpNDc5k
+https://github.com/hazelcast/hazelcast-python-client
+https://github.com/hazelcast/hazelcast-python-client/blob/master/hazelcast/proxy/executor.py
+
+
+

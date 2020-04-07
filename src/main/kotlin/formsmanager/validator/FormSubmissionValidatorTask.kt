@@ -1,9 +1,8 @@
 package formsmanager.validator
 
-import formsmanager.hazelcast.InjectAware
+import formsmanager.hazelcast.context.InjectAware
 import formsmanager.hazelcast.task.Task
 import formsmanager.service.FormService
-import formsmanager.validator.*
 import io.micronaut.context.annotation.Parameter
 import io.reactivex.Single
 import io.reactivex.schedulers.Schedulers
