@@ -5,7 +5,8 @@ import com.hazelcast.jet.Jet
 import com.hazelcast.jet.JetInstance
 import com.hazelcast.jet.config.JetConfig
 import com.hazelcast.map.MapStore
-import formsmanager.hazelcast.serialization.HazelcastTransportableSmileSerializer
+import formsmanager.hazelcast.context.MicronautManagedContext
+import formsmanager.hazelcast.serialization.SmileByteArraySerializer
 import formsmanager.respository.FormSchemasMapStore
 import formsmanager.respository.FormsMapStore
 import io.micronaut.context.ApplicationContext
@@ -39,11 +40,11 @@ class HazelcastJetManager(private val hzConfig: HzConfig) {
 
 @Singleton
 class HzConfig(
-        private val hazelcastMicronautManagedContext: ManagedContext,
+        private val hazelcastMicronautManagedContext: MicronautManagedContext,
         private val applicationContext: ApplicationContext,
         private val formsMapStore: FormsMapStore,
         private val formSchemasMapStore: FormSchemasMapStore,
-        private val smileSerializer: HazelcastTransportableSmileSerializer
+        private val smileSerializer: SmileByteArraySerializer
 ){
 
     companion object{

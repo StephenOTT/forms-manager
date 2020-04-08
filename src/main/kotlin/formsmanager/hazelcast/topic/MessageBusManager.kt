@@ -15,38 +15,13 @@ import java.util.*
 import java.util.concurrent.*
 import javax.inject.Singleton
 
-class MyListener<T>(private val emitter: ObservableEmitter<T>): ReliableMessageListener<T> {
-    init {
-        println("---> Listener has been created!! :)")
-    }
-
-    override fun isLossTolerant(): Boolean {
-        return true
-    }
-
-    override fun onMessage(message: Message<T>) {
-        println("------>RECEIVED MESSAGE!!")
-        emitter.onNext(message.messageObject)
-    }
-
-    override fun storeSequence(sequence: Long) {
-        //do nothing
-    }
-
-    override fun retrieveInitialSequence(): Long {
-        return 0
-    }
-
-    override fun isTerminal(failure: Throwable): Boolean {
-        return false
-    }
-}
-
 inline fun <reified T: Any> ITopic<T>.createObservable(): Observable<T>{
     var listener: UUID? = null
     return Observable.create<T>{ emitter ->
         println("----->Setting up topic listener!! for ${this@createObservable.name}")
-        listener = this.addMessageListener(MyListener<T>(emitter))
+        listener = this.addMessageListener {
+            emitter.onNext(it.messageObject)
+        }
             //@TODO update hazelcast javadocs to indicate to use the ReliableMessageListener for iTopic
         require(listener != null, lazyMessage = {"Listener UUID was null...."})
     }.doOnDispose {

@@ -3,10 +3,10 @@ package formsmanager.respository
 import com.hazelcast.query.Predicates
 import formsmanager.domain.FormSchemaEntity
 import formsmanager.hazelcast.HazelcastJetManager
-import formsmanager.hazelcast.map.CrudableMapStoreRepository
-import formsmanager.hazelcast.map.CurdableMapStore
+import formsmanager.hazelcast.map.persistence.CrudableMapStoreRepository
+import formsmanager.hazelcast.map.persistence.CurdableMapStore
 import formsmanager.hazelcast.map.HazelcastCrudRepository
-import formsmanager.hazelcast.map.MapStoreItemWrapperEntity
+import formsmanager.hazelcast.map.persistence.MapStoreItemWrapperEntity
 import io.micronaut.data.jdbc.annotation.JdbcRepository
 import io.micronaut.data.model.query.builder.sql.Dialect
 import io.reactivex.Single

@@ -2,7 +2,7 @@ package formsmanager.hazelcast.context
 
 import java.lang.annotation.Inherited
 
-@Target(AnnotationTarget.TYPE)
+@Target(AnnotationTarget.CLASS)
 @MustBeDocumented
 @Retention(AnnotationRetention.RUNTIME)
 @Inherited

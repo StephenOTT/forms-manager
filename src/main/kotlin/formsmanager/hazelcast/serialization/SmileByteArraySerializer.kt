@@ -1,21 +1,13 @@
 package formsmanager.hazelcast.serialization
 
-import com.fasterxml.jackson.annotation.JsonTypeInfo
 import com.hazelcast.nio.serialization.ByteArraySerializer
 import javax.inject.Singleton
 
 /**
- * Used as a class type wrapper for Jackson Smile serialization
+ * ByteArraySerializer for converting objects to ByteArray using Jackson Smile Binary Json.
  */
-data class DataWrapper(
-        val clazz: String,
-
-        @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.EXTERNAL_PROPERTY, property = "clazz")
-        val data: Any?
-)
-
 @Singleton
-class HazelcastTransportableSmileSerializer(
+class SmileByteArraySerializer(
         private val binaryMapper: JacksonSmileSerialization
 ) : ByteArraySerializer<Any> {
 
@@ -26,7 +18,7 @@ class HazelcastTransportableSmileSerializer(
     }
 
     override fun destroy() {
-
+        // do nothing
     }
 
     override fun write(`object`: Any): ByteArray {

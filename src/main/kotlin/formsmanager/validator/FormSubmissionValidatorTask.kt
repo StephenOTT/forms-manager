@@ -1,6 +1,5 @@
 package formsmanager.validator
 
-import formsmanager.hazelcast.context.InjectAware
 import formsmanager.hazelcast.task.Task
 import formsmanager.service.FormService
 import io.micronaut.context.annotation.Parameter
@@ -8,7 +7,6 @@ import io.reactivex.Single
 import io.reactivex.schedulers.Schedulers
 import javax.inject.Inject
 
-@InjectAware
 class FormSubmissionValidatorTask(
         @Parameter val formSubmission: FormSubmission // Must be public to ensure that jackson can read th
 ): Task<ValidationResponse>(){

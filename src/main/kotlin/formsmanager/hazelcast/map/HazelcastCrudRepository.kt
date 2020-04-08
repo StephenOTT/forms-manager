@@ -6,7 +6,11 @@ import formsmanager.exception.SomethingWentWrongException
 import formsmanager.hazelcast.HazelcastJetManager
 import io.reactivex.Single
 
-open class HazelcastCrudRepository<K : Any, O : CrudableObject<K>>(
+/**
+ * Abstract class for creating Hazelcast based Map Based Crud operation based repositories.
+ * Used as a helper to quickly setup the map configuration.
+ */
+abstract class HazelcastCrudRepository<K : Any, O : CrudableObject<K>>(
         val mapName: String,
         private val jetService: HazelcastJetManager
 ) {

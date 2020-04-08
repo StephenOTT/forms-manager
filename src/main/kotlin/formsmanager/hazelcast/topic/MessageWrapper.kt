@@ -1,7 +1,6 @@
 package formsmanager.hazelcast.topic
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo
-import formsmanager.hazelcast.serialization.HazelcastTransportable
 import java.util.*
 
 /**
@@ -14,4 +13,4 @@ data class MessageWrapper<M: Any>(
         val replyAddress: String? = null,
         val messageType: String = message::class.qualifiedName!!,
         val headers: Map<String, String> = mapOf()
-) : HazelcastTransportable
+)

@@ -1,65 +1,18 @@
-package formsmanager.hazelcast.map
+package formsmanager.hazelcast.map.persistence
 
 import com.hazelcast.map.MapStore
-import formsmanager.hazelcast.serialization.HazelcastTransportable
-import formsmanager.hazelcast.serialization.JacksonSmileSerialization
+import formsmanager.hazelcast.map.CrudableObject
 import formsmanager.ifDebugEnabled
-import io.micronaut.core.convert.ConversionContext
-import io.micronaut.core.convert.TypeConverter
-import io.micronaut.data.annotation.TypeDef
-import io.micronaut.data.model.DataType
-import io.micronaut.data.repository.CrudRepository
 import org.slf4j.LoggerFactory
 import java.util.*
 import java.util.stream.Collectors
 import java.util.stream.StreamSupport
-import javax.inject.Singleton
-import javax.persistence.Id
-import javax.persistence.MappedSuperclass
 
-interface CrudableMapStoreRepository<E: MapStoreItemWrapperEntity<*>> : CrudRepository<E, UUID> {
-    fun listKey(): List<UUID>
-    fun deleteByKeyIn(key: List<UUID>)
-}
-
-@MappedSuperclass
-abstract class MapStoreItemWrapperEntity<V: CrudableObject<UUID>>(
-        @field:Id
-        val key: UUID,
-
-        val classId: String,
-
-        @field:TypeDef(type = DataType.BYTE_ARRAY)
-        val value: V
-)
-
-
-@Singleton
-class CrudableObjectByteArrayConverter(
-        private val smileMapper: JacksonSmileSerialization
-) : TypeConverter<CrudableObject<*>, ByteArray> {
-
-    private val mapper = smileMapper.smileMapper
-
-    override fun convert(`object`: CrudableObject<*>, targetType: Class<ByteArray>, context: ConversionContext): Optional<ByteArray> {
-        return Optional.of(mapper.writeValueAsBytes(`object`))
-    }
-}
-
-@Singleton
-class HazelcastTransportableByteArrayConverter(
-        private val smileMapper: JacksonSmileSerialization
-) : TypeConverter<HazelcastTransportable, ByteArray> {
-
-    private val mapper = smileMapper.smileMapper
-
-    override fun convert(`object`: HazelcastTransportable, targetType: Class<ByteArray>, context: ConversionContext): Optional<ByteArray> {
-        return Optional.of(mapper.writeValueAsBytes(`object`))
-    }
-}
-
-
-open class CurdableMapStore<E: CrudableObject<UUID>, W: MapStoreItemWrapperEntity<E>, R: CrudableMapStoreRepository<W>>(
+/**
+ * Abstract class used to for creating a MapStore for crud operations with
+ * a persistence repositories such as JdbcRepository.
+ */
+abstract class CurdableMapStore<E: CrudableObject<UUID>, W: MapStoreItemWrapperEntity<E>, R: CrudableMapStoreRepository<W>>(
         private val mapStoreRepository: R
 ) : MapStore<UUID, E> {
 

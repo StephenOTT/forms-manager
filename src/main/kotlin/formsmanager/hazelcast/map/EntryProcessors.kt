@@ -5,6 +5,10 @@ import formsmanager.exception.AlreadyExistsException
 import formsmanager.exception.NotFoundException
 import formsmanager.exception.OptimisticLockingException
 
+/**
+ * Basic entry processor for use when creating a new entry/item in a Map.
+ * Checks if the item already exists based on the key.
+ */
 class CreateEntryProcessor<K: Any, O: CrudableObject<*>>(private val insertValue: O) : EntryProcessor<K, O, O>{
     override fun process(entry: MutableMap.MutableEntry<K, O>): O {
         val value:O? = entry.value
