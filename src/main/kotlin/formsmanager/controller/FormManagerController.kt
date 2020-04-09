@@ -4,9 +4,11 @@ import formsmanager.domain.FormEntity
 import formsmanager.domain.FormSchemaEntity
 import formsmanager.exception.ErrorMessage
 import formsmanager.exception.FormManagerException
-import formsmanager.hazelcast.task.TaskManager
 import formsmanager.service.FormService
-import formsmanager.validator.*
+import formsmanager.validator.FormSubmission
+import formsmanager.validator.FormSubmissionData
+import formsmanager.validator.FormValidationException
+import formsmanager.validator.ValidationResponseInvalid
 import io.micronaut.http.HttpRequest
 import io.micronaut.http.HttpResponse
 import io.micronaut.http.annotation.*
@@ -75,22 +77,16 @@ class FormManagerController(
      */
     @Post("/{uuid}/schemas/{schemaUuid}/validate")
     fun validateFormsSpecificSchema(uuid: UUID, schemaUuid: UUID, @Body submission: Single<FormSubmissionData>): Single<HttpResponse<Map<String, Any?>>> {
-        val replyTo = UUID.randomUUID()
-        val qName = "form-schemas-validator"
-
         return formService.formExists(uuid).flatMap {
             if (it) {
                 formService.getSchema(schemaUuid)
             } else {
                 throw IllegalArgumentException("Cannot find form ${uuid}")
             }
-
         }.flatMap {
             submission.map { submissionData -> FormSubmission(it.schema, submissionData) }
-
         }.flatMap {
             formService.validationFormSubmissionAsTask(it)
-
         }.map {
             HttpResponse.ok(it.processed_submission)
         }
@@ -107,9 +103,9 @@ class FormManagerController(
                 FormSubmission(schema.schema, submissionData)
             }
         }.flatMap {
-            formService.validateFormSubmission(it)
+            formService.validationFormSubmissionAsTask(it)
         }.map {
-            HttpResponse.ok(it)
+            HttpResponse.ok(it.processed_submission)
         }
     }
 
@@ -119,9 +115,9 @@ class FormManagerController(
     @Post("/validate")
     fun validate(@Body submission: Single<FormSubmission>): Single<HttpResponse<Map<String, Any?>>> {
         return submission.flatMap {
-            formService.validateFormSubmission(it)
+            formService.validationFormSubmissionAsTask(it)
         }.map {
-            HttpResponse.ok(it)
+            HttpResponse.ok(it.processed_submission)
         }
     }
 

@@ -28,14 +28,12 @@ class HazelcastJetManager(private val hzConfig: HzConfig) {
     @PostConstruct
     fun initialize(){
 
-        val jconfig = JetConfig()
-        jconfig.hazelcastConfig = hzConfig.generateHzConfig()
+        val jetCfg = JetConfig()
+        jetCfg.hazelcastConfig = hzConfig.generateHzConfig()
 
-        defaultInstance = Jet.newJetInstance(jconfig)
+        defaultInstance = Jet.newJetInstance(jetCfg)
     }
 }
-
-
 
 
 @Singleton
@@ -54,25 +52,21 @@ class HzConfig(
     fun generateHzConfig():Config{
         val hConfig:Config = ClasspathYamlConfig("hazelcast.yml")
 
-//        val smileConfig: SerializerConfig = SerializerConfig()
-//        smileConfig.implementation = smileSerializer
-//        smileConfig.typeClass = HazelcastTransportable::class.java
-
         val serializationConfig = SerializationConfig()
-//        serializationConfig.addSerializerConfig(smileConfig)
 
         val globalSerializer = GlobalSerializerConfig()
-//                .setOverrideJavaSerialization(true)
+//                .setOverrideJavaSerialization(true) // Make this a config
                 .setImplementation(smileSerializer)
         serializationConfig.globalSerializerConfig = globalSerializer
 
         hConfig.serializationConfig = serializationConfig
 
+        //@TODO conver this to * mappings
         hConfig.getMapConfig("forms").mapStoreConfig = createMapStoreConfig(formsMapStore)
         hConfig.getMapConfig("form-schemas").mapStoreConfig = createMapStoreConfig(formSchemasMapStore)
 
         hConfig.managedContext = hazelcastMicronautManagedContext
-        hConfig.classLoader = applicationContext.classLoader
+        hConfig.classLoader = applicationContext.classLoader //@TODO review impacts
         return hConfig
     }
 

@@ -12,12 +12,5 @@ data class FormSubmissionData(
         val data: Map<String, Any?>,
         val metadata: Map<String, Any?>?)
 
-data class FormSubmissionValidationResult(
-        val state: String,
-        val successResult: Map<String, Any?>? = null,
-        val errorMessage: String? = null,
-        val errorInfo: Any? = null
-)
-
 
 

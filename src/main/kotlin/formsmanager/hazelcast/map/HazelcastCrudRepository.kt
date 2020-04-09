@@ -54,7 +54,7 @@ abstract class HazelcastCrudRepository<K : Any, O : CrudableObject<K>>(
 
     fun delete(itemKey: K): Single<O> {
         return Single.fromCallable {
-            lockItem(itemKey)
+            lockItem(itemKey) //@TODO Review for removal and replace with entity processor
         }.map {
             mapService.removeAsync(itemKey).toCompletableFuture()
         }.flatMap {
