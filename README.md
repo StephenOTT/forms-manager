@@ -14,6 +14,22 @@ that micronaut works from and uses Hazelcast's system for cross-app communicatio
 1. POST /form/:uuid/schemas/:schemaUuid/validate
 
 
+# Viewers
+
+Swagger file: `http://localhost:8080/swagger/forms-manager-1.0.yml
+
+1. Swagger-Ui: `http://localhost:8080/swagger-ui/index.html`
+1. ReDoc: `http://localhost:8080/redoc/index.html`
+1. RapiDoc: `http://localhost:8080/rapidoc/index.html`
+
+# Docker
+
+1. Go to project
+1. Run `docker build -t forms-manager .`
+3. Run `docker run -p 8080:8080 --name forms-manager forms-manager`
+
+
+
 
 Notes:
 
@@ -29,6 +45,7 @@ questions
 todo:
 
 1. Add Avro support
+1. Build a annotation processor for automating field logic updates such as Optimistic Locking increments, UpdatedDate, etc.  Basically any field that cannot be updated by the user.
 
 
 Python execution service:
@@ -111,3 +128,24 @@ Example:
 class FormsMapStore(mapStoreRepository: FormsMapStoreRepository) :
         CurdableMapStore<FormEntity, FormEntityWrapper, FormsMapStoreRepository>(mapStoreRepository)
 ```
+
+
+
+
+# Create/Update logic notes:
+
+1. Create: Optimistic Locking is automatically performed at the Entry Processor level before the inser/update logic is executed.
+1. Update logic requires specific updates of fields such as: 
+   ```kotlin
+    formHazelcastRepository.update(formEntity) { originalItem, newItem ->
+        newItem.copy(
+                ol = originalItem.ol + 1,
+                id = originalItem.id,
+                type = originalItem.type,
+                createdAt = originalItem.createdAt,
+                updatedAt = Instant.now()
+        )
+    }
+   ```
+1. During a Update, the new item is injected into the .update() to apply the internal automatic checks and updates (such as the Optimistic locking check).
+  

@@ -65,7 +65,12 @@ dependencies {
 
     implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-smile:2.10.3")
 
-    
+    kapt("io.micronaut.configuration:micronaut-openapi:1.4.3")
+    implementation("io.swagger.core.v3:swagger-annotations")
+
+
+
+
 }
 
 application {

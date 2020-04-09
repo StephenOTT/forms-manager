@@ -1,5 +1,6 @@
 package formsmanager.hazelcast.map.persistence
 
+import com.fasterxml.jackson.databind.ObjectMapper
 import formsmanager.hazelcast.map.CrudableObject
 import formsmanager.hazelcast.serialization.JacksonSmileSerialization
 import io.micronaut.core.convert.ConversionContext
@@ -15,10 +16,8 @@ import javax.inject.Singleton
  */
 @Singleton
 class CrudableObjectByteArrayConverter(
-        private val smileMapper: JacksonSmileSerialization
+        private val mapper: ObjectMapper
 ) : TypeConverter<CrudableObject<*>, ByteArray> {
-
-    private val mapper = smileMapper.smileMapper
 
     override fun convert(`object`: CrudableObject<*>, targetType: Class<ByteArray>, context: ConversionContext): Optional<ByteArray> {
         return Optional.of(mapper.writeValueAsBytes(`object`))

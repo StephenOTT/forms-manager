@@ -16,5 +16,7 @@ class JacksonSmileSerialization(
         private val objectMapperFactory: ObjectMapperFactory,
         private val jacksonConfiguration: JacksonConfiguration
 ) {
-    val smileMapper: ObjectMapper = objectMapperFactory.objectMapper(jacksonConfiguration, SmileFactory())
+    val smileMapper: ObjectMapper = objectMapperFactory
+            .objectMapper(jacksonConfiguration, SmileFactory())
 }
+

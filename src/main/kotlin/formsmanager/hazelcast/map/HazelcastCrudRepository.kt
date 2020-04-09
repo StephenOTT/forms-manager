@@ -37,7 +37,7 @@ abstract class HazelcastCrudRepository<K : Any, O : CrudableObject<K>>(
     /**
      * Update a existing item.
      */
-    fun update(item: O, updateLogic: (originalItem: O) -> O): Single<O> {
+    fun update(item: O, updateLogic: (originalItem: O, newItem: O) -> O): Single<O> {
         //@TODO Review for refactor optimizations
         return Single.fromFuture(
                 mapService.submitToKey<O>(item.id, AdvUpdateEntryProcessor<K, O>(item, updateLogic)).toCompletableFuture())

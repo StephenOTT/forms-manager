@@ -8,6 +8,7 @@ import io.micronaut.http.annotation.Post
 import io.micronaut.http.client.annotation.Client
 import io.micronaut.jackson.annotation.JacksonFeatures
 import io.reactivex.Single
+import io.swagger.v3.oas.annotations.media.Schema
 
 @Client("\${formValidator.client.host}")
 @JacksonFeatures(
@@ -29,6 +30,7 @@ interface ValidationResponse{
 
 data class ValidationResponseValid(val processed_submission: Map<String, Any?>): ValidationResponse
 
+@Schema
 data class ValidationResponseInvalid(@get:JsonProperty("isJoi") @param:JsonProperty("isJoi") val isJoi: Boolean,
                                      val name: String,
                                      val details: List<Map<String, Any>>,

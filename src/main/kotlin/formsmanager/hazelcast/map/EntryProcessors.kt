@@ -41,29 +41,12 @@ class AdvCreateEntryProcessor<K : Any, O : CrudableObject<*>>(private val insert
 }
 
 /**
- * Entry Processor to be used for Updates to a existing Map Entry.
- * Appliess a +1 to the `ol` propert in the HazelcastCrudableObject
- *
- */
-class UpdateEntryProcessor<K : Any, O : CrudableObject<*>>(private val updateValue: O) : EntryProcessor<K, O, O> {
-    override fun process(entry: MutableMap.MutableEntry<K, O>): O {
-        val value: O? = entry.value
-        if (value == null) {
-            throw NotFoundException("Item ${entry.key} could not be found.")
-        } else {
-            //@TODO Review doing a injectable function to write custom modify logic
-            entry.setValue(updateValue.apply { ol += 1 })
-            return entry.value
-        }
-    }
-}
-
-/**
  * Entry Processor for Updating existing Map values.
  * Provides ability to pass a function for update logic with the new object and old object.
  * The provided function's return value is the object that will be replace the old object
+ * Checks to ensure that the updated entry has the same ol value as the original item (Optimistic locking)
  */
-class AdvUpdateEntryProcessor<K : Any, O : CrudableObject<*>>(private val updateValue: O, private val updateLogic: (originalItem: O) -> O) : EntryProcessor<K, O, O> {
+class AdvUpdateEntryProcessor<K : Any, O : CrudableObject<*>>(private val updateValue: O, private val updateLogic: (originalItem: O, newItem: O)  -> O) : EntryProcessor<K, O, O> {
     override fun process(entry: MutableMap.MutableEntry<K, O>): O {
         val value: O? = entry.value
         if (value == null) {
@@ -72,7 +55,7 @@ class AdvUpdateEntryProcessor<K : Any, O : CrudableObject<*>>(private val update
             if (value.ol != updateValue.ol) {
                 throw OptimisticLockingException("Optimistic Locking Exception: Provided item ${updateValue.id} does not have the same OL value of locked item ${value.ol}.")
             }
-            entry.setValue(updateLogic.invoke(value))
+            entry.setValue(updateLogic.invoke(value, updateValue))
             return entry.value
         }
     }

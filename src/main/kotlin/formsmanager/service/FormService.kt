@@ -10,6 +10,7 @@ import formsmanager.validator.*
 import io.micronaut.http.client.exceptions.HttpClientResponseException
 import io.reactivex.Single
 import org.slf4j.LoggerFactory
+import java.time.Instant
 import java.util.*
 import javax.inject.Singleton
 
@@ -54,9 +55,54 @@ class FormService(
      * @param formEntity Form to be updated/overwritten
      */
     fun updateForm(formEntity: FormEntity): Single<FormEntity> {
-        return formHazelcastRepository.update(formEntity) { originalItem ->
-            formEntity.apply { ol = +1 }
+        return formHazelcastRepository.update(formEntity) { originalItem, newItem ->
+            //Update logic for automated fields @TODO consider automation with annotations
+            newItem.copy(
+                    ol = originalItem.ol + 1,
+                    id = originalItem.id,
+                    type = originalItem.type,
+                    createdAt = originalItem.createdAt,
+                    updatedAt = Instant.now()
+            )
         }
+    }
+
+    /**
+     * Update/overwrite Form Schema
+     * @param formSchemaEntity Form Schema to be updated/overwritten
+     */
+    fun updateFormSchema(formId: UUID, schemaEntity: FormSchemaEntity, isDefault: Boolean? = false): Single<FormSchemaEntity> {
+        return formHazelcastRepository.find(formId).flatMap { form ->
+            require(formId == schemaEntity.formId) {
+                "Form $formId does not match Id in provided schema."
+            }
+            //@TODO consider a lock for form
+
+            // Create the form schema
+            formSchemaHazelcastRepository.update(schemaEntity) { originalItem, newItem ->
+                // Update logic for automated fields @TODO consider automation with annotations
+                newItem.copy(
+                        ol = originalItem.ol + 1,
+                        id = originalItem.id,
+                        createdAt = originalItem.createdAt,
+                        updatedAt = Instant.now()
+                )
+            }.map { entity ->
+                Pair(form, entity)
+            }
+
+        }.flatMap {
+            //If the form schema was created then update the Form with the default schema ID
+            formHazelcastRepository.update(it.first){ old, new ->
+                old.copy(defaultSchema = new.defaultSchema)
+            }.map { res ->
+                Pair(res, it.second)
+            }
+        }.map {
+            // Return the schema
+            it.second
+        }
+
     }
 
     /**
@@ -67,17 +113,26 @@ class FormService(
      */
     fun createSchema(formId: UUID, schemaEntity: FormSchemaEntity, isDefault: Boolean? = false): Single<FormSchemaEntity> {
         return formHazelcastRepository.find(formId).flatMap { form ->
-            require(formId == schemaEntity.formId, lazyMessage = { "Form $formId does not match Id in provided schema." })
+            require(formId == schemaEntity.formId) {
+                "Form $formId does not match Id in provided schema."
+            }
+            //@TODO consider a lock for form
+
+            // Create the form schema
             formSchemaHazelcastRepository.create(schemaEntity).map { createdSchema ->
                 Pair(form, createdSchema)
             }
-        }.map {
-            if (isDefault == true) {
-                formHazelcastRepository.update(it.first.apply { defaultSchema = it.second.id }, { originalItem -> it.first}).blockingGet() //@TODO FIX <----
-                it.second
-            } else {
-                it.second
+
+        }.flatMap {
+            //If the form schema was created then update the Form with the default schema ID
+            formHazelcastRepository.update(it.first){ old, new ->
+                old.copy(defaultSchema = new.defaultSchema)
+            }.map { res ->
+                Pair(res, it.second)
             }
+        }.map {
+            // Return the schema
+            it.second
         }
     }
 

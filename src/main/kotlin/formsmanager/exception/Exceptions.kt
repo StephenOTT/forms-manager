@@ -1,6 +1,7 @@
 package formsmanager.exception
 
 import io.micronaut.http.HttpStatus
+import io.swagger.v3.oas.annotations.media.Schema
 
 open class FormManagerException(override val message: String,
                                 cause: Throwable? = null,
@@ -11,6 +12,7 @@ open class FormManagerException(override val message: String,
     }
 }
 
+@Schema
 data class ErrorMessage(val message: String, val info: Any?)
 
 class NotFoundException(message: String, cause: Throwable? = null, info: Any? = null, httpStatus: HttpStatus = HttpStatus.NOT_FOUND) : FormManagerException(message, cause, info, httpStatus)

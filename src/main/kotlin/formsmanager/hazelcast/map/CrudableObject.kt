@@ -15,7 +15,7 @@ import formsmanager.hazelcast.map.persistence.MapStoreItemWrapperEntity
  */
 interface CrudableObject<I : Any> {
     val id: I
-    var ol: Long
+    val ol: Long
 
     fun toEntity(): MapStoreItemWrapperEntity<*>
 }
