@@ -16,10 +16,13 @@ import javax.persistence.Entity
  * Implementation providing a Form IMDG IMap CRUD operations repository.
  */
 @Singleton
-class FormHazelcastRepository(private val jetService: HazelcastJetManager) :
+class FormHazelcastRepository(
+        private val jetService: HazelcastJetManager,
+        private val mapStore: FormsMapStore) :
         HazelcastCrudRepository<UUID, FormEntity>(
                 jetService = jetService,
-                mapName = "forms"
+                mapName = "forms",
+                useMapStore = mapStore
         ) {
 }
 

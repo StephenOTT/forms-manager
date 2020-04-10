@@ -1,9 +1,6 @@
 package formsmanager.controller
 
-import formsmanager.domain.FormEntity
-import formsmanager.domain.FormEntityCreator
-import formsmanager.domain.FormSchemaEntity
-import formsmanager.domain.FormSchemaEntityCreator
+import formsmanager.domain.*
 import formsmanager.exception.ErrorMessage
 import formsmanager.exception.FormManagerException
 import formsmanager.exception.NotFoundException
@@ -87,6 +84,20 @@ class FormManagerController(
             HttpResponse.ok(it)
         }
     }
+
+    @Get("/{uuid}/schema/{schemaUuid}/data")
+    fun getSchemaData(uuid: UUID, schemaUuid: UUID): Single<HttpResponse<FormSchema>> {
+        return formService.formExists(uuid).flatMap {
+            if (it) {
+                formService.getSchema(schemaUuid)
+            } else {
+                throw IllegalArgumentException("Cannot find form ${uuid}")
+            }
+        }.map {
+            HttpResponse.ok(it.schema)
+        }
+    }
+
 
     /**
      * Create a form schema for a form

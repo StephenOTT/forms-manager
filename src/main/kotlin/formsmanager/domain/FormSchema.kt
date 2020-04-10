@@ -1,7 +1,12 @@
 package formsmanager.domain
 
+import com.fasterxml.jackson.annotation.JsonInclude
+
 data class FormSchema(
         val display: String,
+
         val components: List<Map<String, Any>>,
-        val settings: Map<String, Any>? = null
+
+        @JsonInclude(JsonInclude.Include.NON_NULL)
+        val settings: Map<String, Any> = mapOf()
 ) {}

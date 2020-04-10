@@ -1,6 +1,9 @@
 micronaut:
   application:
     name: forms-manager
+  server:
+    cors:
+      enabled: true
   router:
     static-resources:
       swagger:

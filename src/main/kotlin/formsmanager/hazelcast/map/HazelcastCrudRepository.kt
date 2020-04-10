@@ -1,5 +1,6 @@
 package formsmanager.hazelcast.map
 
+import com.hazelcast.map.MapStore
 import formsmanager.exception.CrudOperationException
 import formsmanager.exception.NotFoundException
 import formsmanager.exception.SomethingWentWrongException
@@ -12,7 +13,8 @@ import io.reactivex.Single
  */
 abstract class HazelcastCrudRepository<K : Any, O : CrudableObject<K>>(
         val mapName: String,
-        private val jetService: HazelcastJetManager
+        private val jetService: HazelcastJetManager,
+        val useMapStore: MapStore<*,*>? = null
 ) {
 
     /**

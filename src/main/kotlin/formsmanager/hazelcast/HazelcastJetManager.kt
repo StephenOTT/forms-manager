@@ -6,10 +6,13 @@ import com.hazelcast.jet.JetInstance
 import com.hazelcast.jet.config.JetConfig
 import com.hazelcast.map.MapStore
 import formsmanager.hazelcast.context.MicronautManagedContext
+import formsmanager.hazelcast.map.HazelcastCrudRepository
 import formsmanager.hazelcast.serialization.SmileByteArraySerializer
+import formsmanager.ifDebugEnabled
 import formsmanager.respository.FormSchemasMapStore
 import formsmanager.respository.FormsMapStore
 import io.micronaut.context.ApplicationContext
+import io.micronaut.context.BeanContext
 import io.micronaut.context.annotation.Context
 import org.slf4j.LoggerFactory
 import javax.annotation.PostConstruct
@@ -42,7 +45,8 @@ class HzConfig(
         private val applicationContext: ApplicationContext,
         private val formsMapStore: FormsMapStore,
         private val formSchemasMapStore: FormSchemasMapStore,
-        private val smileSerializer: SmileByteArraySerializer
+        private val smileSerializer: SmileByteArraySerializer,
+        private val beanContext: BeanContext
 ){
 
     companion object{
@@ -50,6 +54,8 @@ class HzConfig(
     }
 
     fun generateHzConfig():Config{
+        //@TODO review for optimization and loading with config and annotations
+
         val hConfig:Config = ClasspathYamlConfig("hazelcast.yml")
 
         val serializationConfig = SerializationConfig()
@@ -62,8 +68,10 @@ class HzConfig(
         hConfig.serializationConfig = serializationConfig
 
         //@TODO conver this to * mappings
-        hConfig.getMapConfig("forms").mapStoreConfig = createMapStoreConfig(formsMapStore)
-        hConfig.getMapConfig("form-schemas").mapStoreConfig = createMapStoreConfig(formSchemasMapStore)
+        hConfig.getMapConfig("forms")
+                .setMapStoreConfig(createMapStoreConfig(formsMapStore))
+        hConfig.getMapConfig("form-schemas")
+                .setMapStoreConfig(createMapStoreConfig(formSchemasMapStore))
 
         hConfig.managedContext = hazelcastMicronautManagedContext
         hConfig.classLoader = applicationContext.classLoader //@TODO review impacts

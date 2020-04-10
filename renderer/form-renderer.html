@@ -1,0 +1,46 @@
+<html>
+<head>
+    <link rel='stylesheet' href='https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css'>
+    <link rel='stylesheet' href='https://unpkg.com/formiojs@latest/dist/formio.full.min.css'>
+    <script src='https://unpkg.com/formiojs@latest/dist/formio.full.min.js'></script>
+    <script src="https://code.jquery.com/jquery-3.4.1.min.js"
+            integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script>
+    <script type='text/javascript'>
+        $(document).ready(function () {
+            $("#btn").click(function () {
+                var schemaUrl = $("#schemaurl").val();
+                var submitUrl = $("#submiturl").val();
+                $.getJSON(schemaUrl,
+                    function (data) {
+                        Formio.createForm(document.getElementById('formio'), data)
+                            .then(function (form) {
+                                form.on('submit', (submission) => {
+                                    console.log('The form was just submitted!!!');
+                                    $.post(submitUrl, submission, function(data, status, jqXHR){
+                                        console.log('The form submission was sent to ' + submitUrl + ' response was('+ status +'): ' + data);
+                                    })
+                                });
+                                form.on('error', (errors) => {
+                                    console.log('We have errors!');
+                                })
+                            });
+                    });
+            });
+        });
+    </script>
+</head>
+<body>
+<div id="main">
+    <fieldset>
+        <legend>Schema URL</legend>
+        <input id="schemaurl" type="text" name="text">
+
+        <legend>Submit Url</legend>
+        <input id="submiturl" type="text" name="submit-url">
+    </fieldset>
+    <button id="btn">Get Schema</button>
+    <p></p>
+</div>
+<div id='formio'></div>
+</body>
+</html>
