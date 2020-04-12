@@ -6,6 +6,8 @@ import formsmanager.hazelcast.task.TaskManager
 import formsmanager.ifDebugEnabled
 import formsmanager.respository.FormHazelcastRepository
 import formsmanager.respository.FormSchemaHazelcastRepository
+import formsmanager.submission.FormSubmissionResponse
+import formsmanager.submission.SubmissionHandler
 import formsmanager.validator.*
 import io.micronaut.http.client.exceptions.HttpClientResponseException
 import io.reactivex.Single
@@ -19,7 +21,8 @@ class FormService(
         private val formHazelcastRepository: FormHazelcastRepository,
         private val formSchemaHazelcastRepository: FormSchemaHazelcastRepository,
         private val formValidatorClient: FormValidatorClient,
-        private val taskManager: TaskManager
+        private val taskManager: TaskManager,
+        private val submissionHandler: SubmissionHandler
 ) {
 
     companion object {
@@ -93,7 +96,7 @@ class FormService(
 
         }.flatMap {
             //If the form schema was created then update the Form with the default schema ID
-            formHazelcastRepository.update(it.first){ old, new ->
+            formHazelcastRepository.update(it.first) { old, new ->
                 old.copy(defaultSchema = new.defaultSchema)
             }.map { res ->
                 Pair(res, it.second)
@@ -125,7 +128,7 @@ class FormService(
 
         }.flatMap {
             //If the form schema was created then update the Form with the default schema ID
-            formHazelcastRepository.update(it.first){ old, new ->
+            formHazelcastRepository.update(it.first) { old, new ->
                 old.copy(defaultSchema = new.defaultSchema)
             }.map { res ->
                 Pair(res, it.second)
@@ -154,6 +157,9 @@ class FormService(
 
     fun getSchema(schemaId: UUID): Single<FormSchemaEntity> {
         return formSchemaHazelcastRepository.find(schemaId)
+                .onErrorResumeNext {
+                    Single.error(IllegalArgumentException("Cannot find schema id"))
+                }
     }
 
     /**
@@ -172,7 +178,7 @@ class FormService(
         }
     }
 
-    fun validateFormSubmission(submission: FormSubmission): Single<Map<String, Any?>>{
+    fun validateFormSubmission(submission: FormSubmission): Single<Map<String, Any?>> {
         return formValidatorClient.validate(submission)
                 .onErrorResumeNext {
                     // @TODO Can eventually be replaced once micronaut-core fixes a issue where the response body is not passed to @Error handler when it catches the HttpClientResponseException
@@ -192,17 +198,17 @@ class FormService(
                 }
     }
 
-    fun validationFormSubmissionAsTask(formSubmission: FormSubmission): Single<ValidationResponseValid>{
+    fun validationFormSubmissionAsTask(formSubmission: FormSubmission): Single<ValidationResponseValid> {
         return taskManager.submit("form-submission-validator",
-        FormSubmissionValidatorTask(formSubmission)).map {
+                FormSubmissionValidatorTask(formSubmission)).map {
             when (it) {
                 is ValidationResponseValid -> {
-                    log.ifDebugEnabled { "Got A Validation Success result: $it"  }
+                    log.ifDebugEnabled { "Got A Validation Success result: $it" }
                     it
 
                 }
                 is ValidationResponseInvalid -> {
-                    log.ifDebugEnabled { "Got A Validation Failure result: $it"  }
+                    log.ifDebugEnabled { "Got A Validation Failure result: $it" }
                     throw FormValidationException(it)
 
                 }
@@ -211,5 +217,12 @@ class FormService(
                 }
             }
         }
+    }
+
+    /**
+     * Service for handling end-to-end form submission: Submission, Validation, Routing to Submission Handler, and response from submission handler
+     */
+    fun processFormSubmission(formSubmission: FormSubmission): Single<FormSubmissionResponse> {
+        return submissionHandler.process(formSubmission)
     }
 }

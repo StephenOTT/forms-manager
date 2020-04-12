@@ -1,17 +1,20 @@
-WIP prototype to use micronaut with hazelcast to create a in-memory data source 
+WIP prototype to use micronaut with hazelcast to create an in-memory data source 
 that micronaut works from and uses Hazelcast's system for cross-app communication
 
 # Endpoints
 
-1. POST /form
-1. GET /form/:uuid
-1. PATCH /form
-1. POST /form/:uuid/schema?isDefault=true
-1. GET /form/:uuid/schema
-1. GET /form/:uuid/schemas
-1. POST /form/validate
-1. POST /form/:uuid/validate
-1. POST /form/:uuid/schemas/:schemaUuid/validate
+1. POST /form (Create a Form)
+1. GET /form/:uuid (Get a form)
+1. PATCH /form (Update a form)
+1. POST /form/:uuid/schema?isDefault=true (Create a Form Schema)
+1. PATH /form/:uuid/schema/:uuid?isDefault=true (Update a Form Schema)
+1. GET /form/:uuid/schema (Get the default schema for the form)
+1. GET /form/:uuid/schemas (Get all schemas)
+1. GET /form/:uuid/schema/:uuid (Get a specific form schema for a specific form)
+1. POST /form/validate (Generic validation)
+1. POST /form/:uuid/validate (Validation against the Default Form Schema)
+1. POST /form/:uuid/schemas/:schemaUuid/validate (Validation Against a specific Form Schema for a Specific Form)
+1. POST /form/:uuid/schemas/:schemaUuid/submit (For use with the Submission Handler)
 
 
 # Viewers
@@ -45,7 +48,7 @@ questions
 todo:
 
 1. Add Avro support
-1. Build a annotation processor for automating field logic updates such as Optimistic Locking increments, UpdatedDate, etc.  Basically any field that cannot be updated by the user.
+1. Build an annotation processor for automating field logic updates such as Optimistic Locking increments, UpdatedDate, etc.  Basically any field that cannot be updated by the user.
 
 
 Python execution service:
@@ -55,21 +58,31 @@ https://github.com/hazelcast/hazelcast-python-client
 https://github.com/hazelcast/hazelcast-python-client/blob/master/hazelcast/proxy/executor.py
 
 
+Formio Links:
+
+1. https://formio.github.io/formio.js/app/examples/
+2. Web builder: https://formio.github.io/formio.js/app/builder
+3. CUSTOM SUBMISSION: https://formio.github.io/formio.js/app/examples/customendpoint.html
+4. Thank you page: https://formio.github.io/formio.js/app/examples/thanyou.html
+5. Multiple Languages: https://formio.github.io/formio.js/app/examples/language.html
+
+
+
 
 # Building a Hazelcast based CRUD Repository
 
-A Hazelcast based CRUD Repository is made up of four components:
+A Hazelcast based CRUD Repository is four components:
 
 1. EntityWrapper
 1. HazelcastRepository
 1. MapStore
-1. MapStoreRespository
+1. MapStoreRepository
 
 See FormRepository.class for example usage.
 
 ## 1. Entity Wrapper
 
-The entity wrapper is the a extension of MapStoreItemWrapperEntity which is a generic for creating the DB entity that will be stored in the JdbcRepository.
+The entity wrapper is an extend of MapStoreItemWrapperEntity which is a generic for creating the DB entity that will be stored in the JdbcRepository.
 
 Example:
 
@@ -107,7 +120,7 @@ class FormHazelcastRepository(private val jetService: HazelcastJetManager) :
 
 ## 3. MapStore Repository
 
-This is the extend of the CruddableMapStoreRepository which is a extend of the Micronaut CrudRepository.
+A MapStore Repository extends the CruddableMapStoreRepository which extends the Micronaut CrudRepository.
 This repository provides the JDBC connectivity that the MapStore will use.
 
 Example:
@@ -134,7 +147,7 @@ class FormsMapStore(mapStoreRepository: FormsMapStoreRepository) :
 
 # Create/Update logic notes:
 
-1. Create: Optimistic Locking is automatically performed at the Entry Processor level before the inser/update logic is executed.
+1. Create: Optimistic Locking performs automatically at the Entry Processor level before the insert/update logic is executed.
 1. Update logic requires specific updates of fields such as: 
    ```kotlin
     formHazelcastRepository.update(formEntity) { originalItem, newItem ->
@@ -147,5 +160,17 @@ class FormsMapStore(mapStoreRepository: FormsMapStoreRepository) :
         )
     }
    ```
-1. During a Update, the new item is injected into the .update() to apply the internal automatic checks and updates (such as the Optimistic locking check).
-  
+1. During an Update, the new item is injected into the .update() to apply the internal automatic checks and updates (such as the Optimistic locking check).
+
+
+
+Words:
+
+Default
+Strategy
+Simple
+Basic
+Factory
+Service
+System
+Handler

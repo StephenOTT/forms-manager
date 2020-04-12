@@ -5,6 +5,7 @@ import formsmanager.exception.ErrorMessage
 import formsmanager.exception.FormManagerException
 import formsmanager.exception.NotFoundException
 import formsmanager.service.FormService
+import formsmanager.submission.FormSubmissionResponse
 import formsmanager.validator.FormSubmission
 import formsmanager.validator.FormSubmissionData
 import formsmanager.validator.FormValidationException
@@ -168,7 +169,7 @@ class FormManagerController(
             if (it) {
                 formService.getSchema(schemaUuid)
             } else {
-                throw IllegalArgumentException("Cannot find form ${uuid}")
+                Single.error(IllegalArgumentException("Cannot find form ${uuid}"))
             }
         }.flatMap {
             submission.map { submissionData -> FormSubmission(it.schema, submissionData) }
@@ -212,6 +213,38 @@ class FormManagerController(
             HttpResponse.ok(it.processed_submission)
         }
     }
+
+
+
+    /**
+     * Submit a Form submission against a specific schema uuid for a specific form uuid.
+     * Uses the FormSubmissionHandler / Submission Strategy for processing of the Submission.
+     * This endpoint will only validate form ID and schema ID; all other validations are the responsibility of the SubmissionHandler.
+     * Form UUID must exist.
+     * @param uuid The Id of the Form
+     * @param schemaUuid The Id of the Form Schema
+     * @param submission Form Submission Data
+     * @return validation response
+     */
+    @Post("/{uuid}/schemas/{schemaUuid}/submit")
+    fun submitFormsSpecificSchema(uuid: UUID, schemaUuid: UUID, @Body submission: Single<FormSubmissionData>): Single<HttpResponse<FormSubmissionResponse>> {
+        return formService.formExists(uuid).flatMap {
+            if (it) {
+                formService.getSchema(schemaUuid)
+            } else {
+                Single.error(IllegalArgumentException("Cannot find form ${uuid}"))
+            }
+        }.flatMap {
+            submission.map { submissionData -> FormSubmission(it.schema, submissionData) }
+        }.flatMap {
+            formService.processFormSubmission(it)
+
+        }.map {
+            HttpResponse.ok(it)
+        }
+    }
+
+
 
     @Error
     fun formValidationError(request: HttpRequest<*>, exception: FormValidationException): HttpResponse<ValidationResponseInvalid> {
