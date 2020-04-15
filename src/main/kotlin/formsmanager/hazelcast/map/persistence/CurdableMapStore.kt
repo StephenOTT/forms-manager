@@ -24,7 +24,7 @@ abstract class CurdableMapStore<E: CrudableObject<UUID>, W: MapStoreItemWrapperE
         // Hazelcast will retry only on the items left in the method's map.
         map.entries.chunked(500).forEach { batch->
             mapStoreRepository.saveAll(batch.map {
-                it.value.toEntity() as W
+                it.value.toEntityWrapper() as W
             })
             map.keys.removeAll(batch.map{it.key})
         }
@@ -37,7 +37,7 @@ abstract class CurdableMapStore<E: CrudableObject<UUID>, W: MapStoreItemWrapperE
 
     override fun store(key: UUID, value: E) {
         log.ifDebugEnabled { "store() called for ${this::class.qualifiedName}" }
-        mapStoreRepository.save(value.toEntity() as W)
+        mapStoreRepository.save(value.toEntityWrapper() as W)
     }
 
     override fun loadAll(keys: MutableCollection<UUID>?): MutableMap<UUID, E> {

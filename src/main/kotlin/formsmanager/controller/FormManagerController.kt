@@ -13,12 +13,15 @@ import formsmanager.validator.ValidationResponseInvalid
 import io.micronaut.http.HttpRequest
 import io.micronaut.http.HttpResponse
 import io.micronaut.http.annotation.*
+import io.micronaut.security.annotation.Secured
+import io.micronaut.security.rules.SecurityRule
 import io.reactivex.Single
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.util.*
 
 @Controller("/form")
+@Secured(SecurityRule.IS_AUTHENTICATED)
 class FormManagerController(
         private val formService: FormService
 ) {

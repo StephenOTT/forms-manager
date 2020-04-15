@@ -3,6 +3,7 @@ package formsmanager.respository
 import com.hazelcast.query.Predicates
 import formsmanager.domain.FormSchemaEntity
 import formsmanager.hazelcast.HazelcastJetManager
+import formsmanager.hazelcast.annotation.MapStore
 import formsmanager.hazelcast.map.persistence.CrudableMapStoreRepository
 import formsmanager.hazelcast.map.persistence.CurdableMapStore
 import formsmanager.hazelcast.map.HazelcastCrudRepository
@@ -18,14 +19,17 @@ import javax.persistence.Entity
  * Implementation providing a Form Schema IMDG IMap CRUD operations repository.
  */
 @Singleton
+@MapStore(FormSchemasMapStore::class, FormSchemaHazelcastRepository.MAP_NAME)
 class FormSchemaHazelcastRepository(
-        private val jetService: HazelcastJetManager,
-        private val mapStore: FormSchemasMapStore) :
+        private val jetService: HazelcastJetManager) :
         HazelcastCrudRepository<UUID, FormSchemaEntity>(
                 jetService = jetService,
-                mapName = "form-schemas",
-                useMapStore = mapStore
+                mapName = MAP_NAME
         ) {
+
+    companion object{
+        const val MAP_NAME = "form-schemas"
+    }
 
     /**
      * @param itemKey The UUID key of the Form

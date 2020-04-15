@@ -23,7 +23,7 @@ data class FormSchemaEntity(
         ConfigField,
         EnabledField,
         CrudableObject<UUID> {
-    override fun toEntity(): FormSchemaEntityWrapper {
+    override fun toEntityWrapper(): FormSchemaEntityWrapper {
         return FormSchemaEntityWrapper(id, this::class.qualifiedName!!, this)
     }
 }

@@ -2,6 +2,7 @@ package formsmanager.respository
 
 import formsmanager.domain.FormEntity
 import formsmanager.hazelcast.HazelcastJetManager
+import formsmanager.hazelcast.annotation.MapStore
 import formsmanager.hazelcast.map.persistence.CrudableMapStoreRepository
 import formsmanager.hazelcast.map.persistence.CurdableMapStore
 import formsmanager.hazelcast.map.HazelcastCrudRepository
@@ -37,12 +38,15 @@ class FormsMapStore(mapStoreRepository: FormsMapStoreRepository) :
  * Implementation providing a Form IMDG IMap CRUD operations repository.
  */
 @Singleton
+@MapStore(FormsMapStore::class, FormHazelcastRepository.MAP_NAME)
 class FormHazelcastRepository(
-        private val jetService: HazelcastJetManager,
-        private val mapStore: FormsMapStore) :
+        private val jetService: HazelcastJetManager) :
         HazelcastCrudRepository<UUID, FormEntity>(
                 jetService = jetService,
-                mapName = "forms",
-                useMapStore = mapStore
+                mapName = MAP_NAME
         ) {
+
+        companion object{
+                const val MAP_NAME = "forms"
+        }
 }

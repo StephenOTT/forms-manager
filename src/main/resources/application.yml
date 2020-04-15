@@ -18,7 +18,28 @@ micronaut:
       swagger-ui:
         paths: classpath:META-INF/swagger/views/swagger-ui
         mapping: /swagger-ui/**
+  security:
+    enabled: true
+    endpoints:
+      login:
+        enabled: true # Enables login controller
+      oauth:
+        enabled: true # Enables jwt refresh controller
+    token:
+      jwt:
+        enabled: true
+#        generator:
+#          refresh-token-expiration:
+#          access-token-expiration:
+        signatures:
+          secret:
+            generator:
+              # Secret must be at least 256 bytes in length
+              secret: 'fewifjweiufweiufjweiufjewiufhweiufhewiufhweiufhweiufhweiufhweiufhweiufhiweuferiugjhreiguer89g98th439ufheriugfhiwufhriughweiughewiufhweiufhw8h934fhiewufhiweugheirugnkruvherifuwe98rtu9we8ug9ew8gu9er8gu9er8guer98gue9r8gu9e8gher9uvher98bs98h7ysig8u9e8ug9eru8g'
+              base64: true # Indicates the secret is already base64
+              jws-algorithm: HS256
 jackson:
+  serializationInclusion: ALWAYS
   serialization:
     indentOutput: false # Use for debug usage such as console
     writeDatesAsTimestamps: false # turn to true if you want number based dates (epoch)

@@ -1,11 +1,12 @@
 package formsmanager.hazelcast.map
 
-import com.hazelcast.map.MapStore
 import formsmanager.exception.CrudOperationException
 import formsmanager.exception.NotFoundException
 import formsmanager.exception.SomethingWentWrongException
 import formsmanager.hazelcast.HazelcastJetManager
+import formsmanager.ifDebugEnabled
 import io.reactivex.Single
+import org.slf4j.LoggerFactory
 
 /**
  * Abstract class for creating Hazelcast based Map Based Crud operation based repositories.
@@ -13,9 +14,10 @@ import io.reactivex.Single
  */
 abstract class HazelcastCrudRepository<K : Any, O : CrudableObject<K>>(
         val mapName: String,
-        private val jetService: HazelcastJetManager,
-        val useMapStore: MapStore<*,*>? = null
+        private val jetService: HazelcastJetManager
 ) {
+
+    private val log = LoggerFactory.getLogger(this::class.java)
 
     /**
      * Data source for item in a Hazelcast Jet IMap.
@@ -33,6 +35,8 @@ abstract class HazelcastCrudRepository<K : Any, O : CrudableObject<K>>(
                 mapService.submitToKey<O>(item.id, CreateEntryProcessor<K, O>(item)).toCompletableFuture())
                 .onErrorResumeNext {
                     Single.error(CrudOperationException("Unable to create ${item.id}.", it))
+                }.doOnSuccess {
+                    log.ifDebugEnabled { "Entity Created: $it" }
                 }
     }
 
@@ -45,6 +49,8 @@ abstract class HazelcastCrudRepository<K : Any, O : CrudableObject<K>>(
                 mapService.submitToKey<O>(item.id, AdvUpdateEntryProcessor<K, O>(item, updateLogic)).toCompletableFuture())
                 .onErrorResumeNext {
                     Single.error(CrudOperationException("Unable to create ${item.id}.", it))
+                }.doOnSuccess {
+                    log.ifDebugEnabled { "Entity Updated: $it" }
                 }
     }
 
@@ -61,6 +67,8 @@ abstract class HazelcastCrudRepository<K : Any, O : CrudableObject<K>>(
             mapService.removeAsync(itemKey).toCompletableFuture()
         }.flatMap {
             Single.fromFuture(it)
+        }.doOnSuccess {
+            log.ifDebugEnabled { "Entity deleted: $it" }
         }
     }
 

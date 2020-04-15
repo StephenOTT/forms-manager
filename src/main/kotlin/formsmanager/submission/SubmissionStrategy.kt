@@ -2,8 +2,10 @@ package formsmanager.submission
 
 import com.fasterxml.jackson.annotation.JsonInclude
 import formsmanager.service.FormService
+import formsmanager.service.FormValidationService
 import formsmanager.validator.FormSubmission
 import formsmanager.validator.ValidationResponseValid
+import io.micronaut.context.annotation.Requires
 import io.reactivex.Single
 import javax.inject.Singleton
 
@@ -30,11 +32,11 @@ interface SubmissionStrategy {
  */
 @Singleton
 class SubmissionHandler(
-        private val formService: FormService
+        private val formValidationService: FormValidationService
 ) : SubmissionStrategy{
     override fun process(formSubmission: FormSubmission): Single<FormSubmissionResponse> {
         // Where you can fully customize the Form Submission Handling
-        return formService.validationFormSubmissionAsTask(formSubmission).map {
+        return formValidationService.validationFormSubmissionAsTask(formSubmission).map {
             FormSubmissionResponse(it)
         }
     }

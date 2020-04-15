@@ -49,7 +49,8 @@ todo:
 
 1. Add Avro support
 1. Build an annotation processor for automating field logic updates such as Optimistic Locking increments, UpdatedDate, etc.  Basically any field that cannot be updated by the user.
-
+1. Move controllers to module that is Hazelcast client based
+1. Add Camunda node
 
 Python execution service:
 

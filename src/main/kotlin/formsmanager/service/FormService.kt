@@ -22,6 +22,7 @@ class FormService(
         private val formSchemaHazelcastRepository: FormSchemaHazelcastRepository,
         private val formValidatorClient: FormValidatorClient,
         private val taskManager: TaskManager,
+        private val formValidationService: FormValidationService,
         private val submissionHandler: SubmissionHandler
 ) {
 
@@ -198,26 +199,30 @@ class FormService(
                 }
     }
 
-    fun validationFormSubmissionAsTask(formSubmission: FormSubmission): Single<ValidationResponseValid> {
-        return taskManager.submit("form-submission-validator",
-                FormSubmissionValidatorTask(formSubmission)).map {
-            when (it) {
-                is ValidationResponseValid -> {
-                    log.ifDebugEnabled { "Got A Validation Success result: $it" }
-                    it
-
-                }
-                is ValidationResponseInvalid -> {
-                    log.ifDebugEnabled { "Got A Validation Failure result: $it" }
-                    throw FormValidationException(it)
-
-                }
-                else -> {
-                    throw IllegalStateException("Received a unknown Validation Response!!")
-                }
-            }
+        fun validationFormSubmissionAsTask(formSubmission: FormSubmission): Single<ValidationResponseValid> {
+            return formValidationService.validationFormSubmissionAsTask(formSubmission)
         }
-    }
+
+//    fun validationFormSubmissionAsTask(formSubmission: FormSubmission): Single<ValidationResponseValid> {
+//        return taskManager.submit("form-submission-validator",
+//                FormSubmissionValidatorTask(formSubmission)).map {
+//            when (it) {
+//                is ValidationResponseValid -> {
+//                    log.ifDebugEnabled { "Got A Validation Success result: $it" }
+//                    it
+//
+//                }
+//                is ValidationResponseInvalid -> {
+//                    log.ifDebugEnabled { "Got A Validation Failure result: $it" }
+//                    throw FormValidationException(it)
+//
+//                }
+//                else -> {
+//                    throw IllegalStateException("Received a unknown Validation Response!!")
+//                }
+//            }
+//        }
+//    }
 
     /**
      * Service for handling end-to-end form submission: Submission, Validation, Routing to Submission Handler, and response from submission handler

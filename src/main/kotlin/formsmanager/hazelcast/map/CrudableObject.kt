@@ -17,5 +17,5 @@ interface CrudableObject<I : Any> {
     val id: I
     val ol: Long
 
-    fun toEntity(): MapStoreItemWrapperEntity<*>
+    fun toEntityWrapper(): MapStoreItemWrapperEntity<*>
 }

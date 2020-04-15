@@ -47,7 +47,7 @@ data class FormEntity(
         EnabledField,
         TenantField,
         CrudableObject<UUID> {
-    override fun toEntity(): FormEntityWrapper {
+    override fun toEntityWrapper(): FormEntityWrapper {
         return FormEntityWrapper(id, this::class.qualifiedName!!, this)
     }
 }
