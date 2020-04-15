@@ -68,7 +68,10 @@ dependencies {
     kapt("io.micronaut.configuration:micronaut-openapi:1.4.3")
     implementation("io.swagger.core.v3:swagger-annotations")
 
+    implementation("org.apache.shiro:shiro-core:1.5.2")
 
+    kapt("io.micronaut:micronaut-security:1.4.0")
+    implementation("io.micronaut:micronaut-security-jwt:1.4.0")
 
 
 }
