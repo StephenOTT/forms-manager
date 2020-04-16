@@ -78,4 +78,14 @@ data class UserEntity(
             val roles: Set<String> = setOf()
     )
 
+
+    fun accountActive(): Boolean {
+        return kotlin.runCatching {
+            require(!this.accountControlInfo.locked) { "Account is locked" }
+            require(this.emailInfo.emailConfirmed) { "Email is not confirmed" }
+        }.onFailure {
+            throw it
+        }.isSuccess
+    }
+
 }

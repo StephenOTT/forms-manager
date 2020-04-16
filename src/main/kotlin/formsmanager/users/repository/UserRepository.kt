@@ -1,7 +1,7 @@
 package formsmanager.users.repository
 
+import com.hazelcast.core.HazelcastInstance
 import com.hazelcast.query.Predicates
-import formsmanager.hazelcast.HazelcastJetManager
 import formsmanager.hazelcast.annotation.MapStore
 import formsmanager.hazelcast.map.HazelcastCrudRepository
 import formsmanager.hazelcast.map.persistence.CrudableMapStoreRepository
@@ -10,7 +10,9 @@ import formsmanager.hazelcast.map.persistence.MapStoreItemWrapperEntity
 import formsmanager.users.domain.UserEntity
 import io.micronaut.data.jdbc.annotation.JdbcRepository
 import io.micronaut.data.model.query.builder.sql.Dialect
+import io.reactivex.Maybe
 import io.reactivex.Single
+import java.lang.IllegalArgumentException
 import java.util.*
 import javax.inject.Singleton
 import javax.persistence.Entity
@@ -42,9 +44,9 @@ class UsersMapStore(mapStoreRepository: UsersMapStoreRepository) :
 @Singleton
 @MapStore(UsersMapStore::class, UsersHazelcastRepository.MAP_NAME)
 class UsersHazelcastRepository(
-        private val jetService: HazelcastJetManager) :
+        private val hazelcastInstance: HazelcastInstance) :
         HazelcastCrudRepository<UUID, UserEntity>(
-                jetService = jetService,
+                hazelcastInstance = hazelcastInstance,
                 mapName = MAP_NAME
         ) {
 
@@ -61,7 +63,7 @@ class UsersHazelcastRepository(
     }
 
     fun findByEmail(email: String): Single<UserEntity> {
-        return Single.fromCallable {
+        return Single.fromCallable{
             mapService.values(Predicates.equal("emailInfo.email", email)).single()
         }
     }
@@ -71,20 +73,8 @@ class UsersHazelcastRepository(
      */
     fun isActive(userId: UUID): Single<Boolean> {
         return find(userId).map {
-           accountActiveEval(it)
+            it.accountActive()
         }
-    }
-
-    /**
-     * Eval logic for determining if a user is considered active.
-     */
-    private fun accountActiveEval(userEntity: UserEntity): Boolean {
-        return kotlin.runCatching {
-            require(!userEntity.accountControlInfo.locked) { "Account is locked" }
-            require(userEntity.emailInfo.emailConfirmed) { "Email is not confirmed" }
-        }.onFailure {
-            throw it
-        }.isSuccess
     }
 
 }

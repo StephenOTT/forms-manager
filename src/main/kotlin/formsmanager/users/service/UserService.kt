@@ -4,6 +4,7 @@ import formsmanager.ifDebugEnabled
 import formsmanager.security.SecurePasswordService
 import formsmanager.users.domain.UserEntity
 import formsmanager.users.repository.UsersHazelcastRepository
+import io.reactivex.Maybe
 import io.reactivex.Single
 import org.slf4j.LoggerFactory
 import java.time.Instant
@@ -38,6 +39,9 @@ class UserService(
         return userRepository.find(id)
     }
 
+    /**
+     * @exception IllegalArgumentException if the email does not exist.
+     */
     fun getUser(email: String): Single<UserEntity> {
         return userRepository.findByEmail(email)
     }
