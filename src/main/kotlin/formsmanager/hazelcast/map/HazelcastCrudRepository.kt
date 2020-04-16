@@ -1,9 +1,9 @@
 package formsmanager.hazelcast.map
 
+import com.hazelcast.core.HazelcastInstance
 import formsmanager.exception.CrudOperationException
 import formsmanager.exception.NotFoundException
 import formsmanager.exception.SomethingWentWrongException
-import formsmanager.hazelcast.HazelcastJetManager
 import formsmanager.ifDebugEnabled
 import io.reactivex.Single
 import org.slf4j.LoggerFactory
@@ -14,7 +14,7 @@ import org.slf4j.LoggerFactory
  */
 abstract class HazelcastCrudRepository<K : Any, O : CrudableObject<K>>(
         val mapName: String,
-        private val jetService: HazelcastJetManager
+        private val hazelcastInstance: HazelcastInstance
 ) {
 
     private val log = LoggerFactory.getLogger(this::class.java)
@@ -24,7 +24,7 @@ abstract class HazelcastCrudRepository<K : Any, O : CrudableObject<K>>(
      */
     val mapService by lazy {
         // implemented as a lazy to accommodate circular deps that cause deadlock: https://github.com/micronaut-projects/micronaut-data/issues/464
-        jetService.defaultInstance.getMap<K, O>(mapName)
+        hazelcastInstance.getMap<K, O>(mapName)
     }
 
     /**

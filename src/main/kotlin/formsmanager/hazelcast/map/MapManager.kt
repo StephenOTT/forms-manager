@@ -1,16 +1,16 @@
 package formsmanager.hazelcast.map
 
+import com.hazelcast.core.HazelcastInstance
 import com.hazelcast.map.IMap
-import formsmanager.hazelcast.HazelcastJetManager
 import javax.inject.Singleton
 
 @Singleton
 class MapManager(
-        private val hazelcastJetManager: HazelcastJetManager
+        private val hazelcastInstance: HazelcastInstance
 ) {
 
     fun <K: Any, V: Any> getMap(name: String): IMap<K, V> {
-        return hazelcastJetManager.defaultInstance.getMap<K,V>(name)
+        return hazelcastInstance.getMap<K,V>(name)
     }
 
 

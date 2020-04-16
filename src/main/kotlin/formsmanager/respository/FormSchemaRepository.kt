@@ -1,8 +1,8 @@
 package formsmanager.respository
 
+import com.hazelcast.core.HazelcastInstance
 import com.hazelcast.query.Predicates
 import formsmanager.domain.FormSchemaEntity
-import formsmanager.hazelcast.HazelcastJetManager
 import formsmanager.hazelcast.annotation.MapStore
 import formsmanager.hazelcast.map.persistence.CrudableMapStoreRepository
 import formsmanager.hazelcast.map.persistence.CurdableMapStore
@@ -21,9 +21,9 @@ import javax.persistence.Entity
 @Singleton
 @MapStore(FormSchemasMapStore::class, FormSchemaHazelcastRepository.MAP_NAME)
 class FormSchemaHazelcastRepository(
-        private val jetService: HazelcastJetManager) :
+        private val hazelcastInstance: HazelcastInstance) :
         HazelcastCrudRepository<UUID, FormSchemaEntity>(
-                jetService = jetService,
+                hazelcastInstance = hazelcastInstance,
                 mapName = MAP_NAME
         ) {
 
