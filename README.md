@@ -52,6 +52,8 @@ todo:
 1. Move controllers to module that is Hazelcast client based
 1. Add Camunda node
 1. Add TTL for maps with configuration options to clear out/evict memory for seldom used objects. (Evict does not delete from the hazelcast mapstore, it only evicts from in-memory)
+1. Add local caching (with TTL) for WildcardPermissions that were generated from Strings in the User Entity
+1. Add updated to UserDetails (Micronaut security) for working with Subject from Shiro, so we can use the Micronaut Annotation support `@secured` and accessing the Shiro permission validator. 
 
 Python execution service:
 
