@@ -51,6 +51,7 @@ todo:
 1. Build an annotation processor for automating field logic updates such as Optimistic Locking increments, UpdatedDate, etc.  Basically any field that cannot be updated by the user.
 1. Move controllers to module that is Hazelcast client based
 1. Add Camunda node
+1. Add TTL for maps with configuration options to clear out/evict memory for seldom used objects. (Evict does not delete from the hazelcast mapstore, it only evicts from in-memory)
 
 Python execution service:
 
