@@ -4,6 +4,9 @@ import formsmanager.ifDebugEnabled
 import formsmanager.users.service.UserService
 import io.micronaut.security.authentication.*
 import io.reactivex.Single
+import org.apache.shiro.authc.AuthenticationException
+import org.apache.shiro.authc.UsernamePasswordToken
+import org.apache.shiro.subject.Subject
 import org.reactivestreams.Publisher
 import org.slf4j.LoggerFactory
 import javax.inject.Singleton
@@ -12,11 +15,23 @@ import javax.inject.Singleton
 //@TODO refactor Claims Generation for custom Issuer text
 //@TODO refactor Rejection Handler for cleaner responses
 
+/**
+ * Used for converting micronaut auth reqest into a Shiro UsernamePasswordToken
+ */
+fun AuthenticationRequest<*, *>.toUsernamePasswordToken(): UsernamePasswordToken {
+    return UsernamePasswordToken(this.identity.toString(), this.secret.toString())
+}
+
+/**
+ * Authenticates with Shiro.
+ * The Shiro subject is put into a UserDetails Attribute map in the key "subject".
+ * You can inject "Subject" Singleton throughout out the app or use UserDetails to get the subject through the attributes map.
+ * Subject is created on a RequestScope Singleton: meaning the subject is created and destroyed within the scope of the HTTP request.
+ */
 @Singleton
 class CustomAuthenticationProvider(
         private val userService: UserService,
-        private val pwdService: SecurePasswordService
-
+        private val subject: Subject
 ) : AuthenticationProvider {
 
     companion object {
@@ -26,46 +41,62 @@ class CustomAuthenticationProvider(
     override fun authenticate(authenticationRequest: AuthenticationRequest<*, *>): Publisher<AuthenticationResponse> {
         return userService.getUser(authenticationRequest.identity.toString())
                 .onErrorResumeNext {
+                    // @TODO review
+                    // Could not find the email in users
                     Single.error(AuthenticationFailureException(AuthenticationFailed(AuthenticationFailureReason.USER_NOT_FOUND), it))
+
+                }.map { ue ->
+                    if (!ue.emailConfirmed()) {
+                        // User/Account has not been confirmed by email / The account is not setup yet, and therefore they do not have a password yet
+                        throw AuthenticationFailureException(AuthenticationFailed(AuthenticationFailureReason.USER_DISABLED))
+
+                    } else {
+                        //LOGIN
+                        subject.login(authenticationRequest.toUsernamePasswordToken())
+
+                        if (subject.isAuthenticated) {
+                            // Backup check to ensure that login was successful
+                            log.ifDebugEnabled { "Auth Success: Password was valid." }
+                            ue
+                        } else {
+                            // If we reach this point, then something went wrong...
+                            log.error("Major Login Error: Auth Failure: Failure to Authenticate.  Failed login did not throw exception.")
+                            throw AuthenticationFailureException(AuthenticationFailed(AuthenticationFailureReason.CREDENTIALS_DO_NOT_MATCH))
+                        }
+                    }
+
                 }.map { ue ->
                     // Check if the account is active
                     if (!ue.accountActive()) {
                         log.ifDebugEnabled { "Auth Failure: Account is locked." }
                         throw AuthenticationFailureException(AuthenticationFailed(AuthenticationFailureReason.ACCOUNT_LOCKED))
+
                     } else {
-                        ue
+                        //Requires the cast for compiler to pick it up correctly
+                        //--->LOGIN SUCCESS POINT:
+                        UserDetails(ue.id.toString(), listOf(), mapOf(Pair("subject", subject))) as AuthenticationResponse
                     }
 
-                }.flatMap { ue ->
-                    // Validate the Password
-                    check(ue.passwordInfo.passwordHash != null)
-                    check(ue.passwordInfo.salt != null)
-                    pwdService.passwordMatchesSource(
-                            ue.passwordInfo.passwordHash,
-                            ue.passwordInfo.salt,
-                            authenticationRequest.secret.toString().toCharArray()).map {
-                        Pair(it, ue)
-                    }
+                }.toFlowable().onErrorReturn {
+                    //@TODO Review for refactor
+                    when (it) {
+                        is AuthenticationFailureException -> {
+                            // Catching of the custom exceptions to trigger Micronaut responses
+                            log.ifDebugEnabled { "Auth Failure: ${it.authFailure.reason.toString()}" }
+                            it.authFailure
 
-                }.map { (isPwdValid, ue) ->
-                    // If password is valid then return UserDetails
-                    if (isPwdValid) {
-                        log.ifDebugEnabled { "Auth Success: Password was valid." }
-                        UserDetails(ue.id.toString(), ue.rolesInfo.roles) as AuthenticationResponse
-                    } else {
-                        // If the password is incorrect then return auth failed
-                        log.ifDebugEnabled { "Auth Failure: Password was invalid." }
-                        throw AuthenticationFailureException(AuthenticationFailed(AuthenticationFailureReason.CREDENTIALS_DO_NOT_MATCH))
-                    }
+                        }
+                        is AuthenticationException -> {
+                            // Typically occurs when shiro's subject.login() failed
+                            log.ifDebugEnabled { "Auth Failure: ${it.message}" }
+                            AuthenticationFailed(it.message)
 
-                }.toFlowable()
-                .onErrorReturn {
-                    if (it is AuthenticationFailureException) {
-                        log.ifDebugEnabled { "Auth Failure: ${it.authFailure}" }
-                        it.authFailure
-                    } else {
-                        log.error(it.message, it)
-                        AuthenticationFailed("Something went wrong")
+                        }
+                        else -> {
+                            // Unexpected error occurred
+                            log.error(it.message, it)
+                            AuthenticationFailed("Something went wrong")
+                        }
                     }
                 }
     }

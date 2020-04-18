@@ -1,10 +1,9 @@
 package formsmanager.users.service
 
 import formsmanager.ifDebugEnabled
-import formsmanager.security.SecurePasswordService
+import formsmanager.security.HazelcastRealm
 import formsmanager.users.domain.UserEntity
 import formsmanager.users.repository.UsersHazelcastRepository
-import io.reactivex.Maybe
 import io.reactivex.Single
 import org.slf4j.LoggerFactory
 import java.time.Instant
@@ -14,7 +13,7 @@ import javax.inject.Singleton
 @Singleton
 class UserService(
         private val userRepository: UsersHazelcastRepository,
-        private val pwdService: SecurePasswordService
+        private val hazelcastRealm: HazelcastRealm
 ) {
 
     companion object {
@@ -43,6 +42,7 @@ class UserService(
      * @exception IllegalArgumentException if the email does not exist.
      */
     fun getUser(email: String): Single<UserEntity> {
+        //@TODO add index to Users Map for the email property
         return userRepository.findByEmail(email)
     }
 
@@ -117,19 +117,20 @@ class UserService(
             require(it.passwordInfo.resetPasswordInfo.resetPasswordToken == pwdResetToken) { "Invalid password token." }
             it
 
-        }.map {
-            val generatedSalt = pwdService.generateSalt()
-            val generatedHash = pwdService.hashPassword(cleartextPassword, generatedSalt).blockingGet()
+        }.flatMap {ue ->
+            hazelcastRealm.hashPassword(cleartextPassword).map {
+                ue.copy(
+                        emailInfo = ue.emailInfo.copy(emailConfirmed = true),
+                        passwordInfo = ue.passwordInfo.copy(
+                                resetPasswordInfo = null,
+                                passwordHash = it.toBase64(),
+                                salt = it.salt.toBase64(),
+                                algorithmName = it.algorithmName
 
-            it.copy(
-                    emailInfo = it.emailInfo.copy(emailConfirmed = true),
-                    passwordInfo = it.passwordInfo.copy(
-                            resetPasswordInfo = null,
-                            passwordHash = generatedHash,
-                            salt = generatedSalt.toHex()
+                        )
+                )
+            }
 
-                    )
-            )
         }.flatMap {
             updateUser(it)
         }
