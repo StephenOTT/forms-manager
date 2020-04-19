@@ -1,6 +1,5 @@
 package formsmanager.users.controller
 
-import formsmanager.security.SecurePasswordService
 import formsmanager.users.domain.CompleteRegistrationRequest
 import formsmanager.users.domain.UserRegistration
 import formsmanager.users.domain.UserRegistrationResponse

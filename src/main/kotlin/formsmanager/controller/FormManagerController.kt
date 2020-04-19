@@ -10,15 +10,26 @@ import formsmanager.validator.FormSubmission
 import formsmanager.validator.FormSubmissionData
 import formsmanager.validator.FormValidationException
 import formsmanager.validator.ValidationResponseInvalid
+import io.micronaut.context.annotation.Requires
+import io.micronaut.core.bind.ArgumentBinder.BindingResult
+import io.micronaut.core.convert.ArgumentConversionContext
+import io.micronaut.core.type.Argument
 import io.micronaut.http.HttpRequest
 import io.micronaut.http.HttpResponse
 import io.micronaut.http.annotation.*
+import io.micronaut.http.bind.binders.TypedRequestArgumentBinder
+import io.micronaut.http.filter.OncePerRequestHttpServerFilter
 import io.micronaut.security.annotation.Secured
+import io.micronaut.security.authentication.Authentication
+import io.micronaut.security.filters.SecurityFilter
 import io.micronaut.security.rules.SecurityRule
 import io.reactivex.Single
+import org.apache.shiro.subject.Subject
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.util.*
+import javax.inject.Singleton
+
 
 @Controller("/form")
 @Secured(SecurityRule.IS_AUTHENTICATED)
@@ -26,8 +37,9 @@ class FormManagerController(
         private val formService: FormService
 ) {
 
-    private val log: Logger = LoggerFactory.getLogger(FormManagerController::class.java)
-
+    companion object {
+        private val log: Logger = LoggerFactory.getLogger(FormManagerController::class.java)
+    }
 
     /**
      * Get a form.
@@ -49,7 +61,7 @@ class FormManagerController(
      * @return the created Form
      */
     @Post("/")
-    fun createForm(@Body form: FormEntityCreator): Single<HttpResponse<FormEntity>> {
+    fun createForm(subject: Subject, @Body form: FormEntityCreator): Single<HttpResponse<FormEntity>> {
         return formService.createForm(form.toFormEntity(UUID.randomUUID()))
                 .map {
                     HttpResponse.ok(it)
@@ -63,7 +75,7 @@ class FormManagerController(
      * @return The Form
      */
     @Patch("/{uuid}")
-    fun updateForm(uuid: UUID, @Body form: FormEntityCreator): Single<HttpResponse<FormEntity>> {
+    fun updateForm(subject: Subject, uuid: UUID, @Body form: FormEntityCreator): Single<HttpResponse<FormEntity>> {
         return formService.updateForm(form.toFormEntity(uuid))
                 .map {
                     HttpResponse.ok(it)
@@ -77,7 +89,7 @@ class FormManagerController(
      * @return The Form Schema
      */
     @Get("/{uuid}/schema/{schemaUuid}")
-    fun getSchema(uuid: UUID, schemaUuid: UUID): Single<HttpResponse<FormSchemaEntity>> {
+    fun getSchema(subject: Subject, uuid: UUID, schemaUuid: UUID): Single<HttpResponse<FormSchemaEntity>> {
         return formService.formExists(uuid).flatMap {
             if (it) {
                 formService.getSchema(schemaUuid)
@@ -90,7 +102,7 @@ class FormManagerController(
     }
 
     @Get("/{uuid}/schema/{schemaUuid}/data")
-    fun getSchemaData(uuid: UUID, schemaUuid: UUID): Single<HttpResponse<FormSchema>> {
+    fun getSchemaData(subject: Subject, uuid: UUID, schemaUuid: UUID): Single<HttpResponse<FormSchema>> {
         return formService.formExists(uuid).flatMap {
             if (it) {
                 formService.getSchema(schemaUuid)
@@ -111,7 +123,7 @@ class FormManagerController(
      * @return The Form Schema
      */
     @Post("/{uuid}/schema{?isDefault}")
-    fun createSchema(uuid: UUID, @Body schemaEntity: FormSchemaEntityCreator, @QueryValue isDefault: Boolean?): Single<HttpResponse<FormSchemaEntity>> {
+    fun createSchema(subject: Subject, uuid: UUID, @Body schemaEntity: FormSchemaEntityCreator, @QueryValue isDefault: Boolean?): Single<HttpResponse<FormSchemaEntity>> {
         return formService.createSchema(uuid, schemaEntity.toFormSchemaEntity(UUID.randomUUID(), uuid), isDefault)
                 .map {
                     HttpResponse.ok(it)
@@ -126,7 +138,7 @@ class FormManagerController(
      * @return The updated Form Schema
      */
     @Patch("/{uuid}/schema/{schemaUuid}{?isDefault}")
-    fun updateSchema(uuid: UUID, schemaUuid: UUID, @Body formSchema: FormSchemaEntityCreator, @QueryValue isDefault: Boolean?): Single<HttpResponse<FormSchemaEntity>> {
+    fun updateSchema(subject: Subject, uuid: UUID, schemaUuid: UUID, @Body formSchema: FormSchemaEntityCreator, @QueryValue isDefault: Boolean?): Single<HttpResponse<FormSchemaEntity>> {
         return formService.updateFormSchema(uuid, formSchema.toFormSchemaEntity(schemaUuid, uuid), isDefault)
                 .map {
                     HttpResponse.ok(it)
@@ -139,7 +151,7 @@ class FormManagerController(
      * @return The Form Schema that was marked as Default for the specific Form.
      */
     @Get("/{uuid}/schema")
-    fun getFormDefaultSchema(uuid: UUID): Single<HttpResponse<FormSchemaEntity>> {
+    fun getFormDefaultSchema(subject: Subject, uuid: UUID): Single<HttpResponse<FormSchemaEntity>> {
         return formService.getDefaultSchema(uuid).map {
             HttpResponse.ok(it)
         }
@@ -151,7 +163,7 @@ class FormManagerController(
      * @return A array of Form Schema Entities
      */
     @Get("/{uuid}/schemas")
-    fun getAllSchemas(uuid: UUID): Single<HttpResponse<List<FormSchemaEntity>>> {
+    fun getAllSchemas(subject: Subject, uuid: UUID): Single<HttpResponse<List<FormSchemaEntity>>> {
         return formService.getAllSchemas(uuid)
                 .map {
                     HttpResponse.ok(it)
@@ -167,7 +179,7 @@ class FormManagerController(
      * @return validation response
      */
     @Post("/{uuid}/schemas/{schemaUuid}/validate")
-    fun validateFormsSpecificSchema(uuid: UUID, schemaUuid: UUID, @Body submission: Single<FormSubmissionData>): Single<HttpResponse<Map<String, Any?>>> {
+    fun validateFormsSpecificSchema(subject: Subject, uuid: UUID, schemaUuid: UUID, @Body submission: Single<FormSubmissionData>): Single<HttpResponse<Map<String, Any?>>> {
         return formService.formExists(uuid).flatMap {
             if (it) {
                 formService.getSchema(schemaUuid)
@@ -191,7 +203,7 @@ class FormManagerController(
      * @return validation response
      */
     @Post("/{uuid}/validate")
-    fun validateDefaultSchema(uuid: UUID, @Body submission: Single<FormSubmissionData>): Single<HttpResponse<Map<String, Any?>>> {
+    fun validateDefaultSchema(subject: Subject, uuid: UUID, @Body submission: Single<FormSubmissionData>): Single<HttpResponse<Map<String, Any?>>> {
         return formService.getDefaultSchema(uuid).flatMap { schema ->
             submission.map { submissionData ->
                 FormSubmission(schema.schema, submissionData)
@@ -209,14 +221,13 @@ class FormManagerController(
      * @return validation response
      */
     @Post("/validate")
-    fun validate(@Body submission: Single<FormSubmission>): Single<HttpResponse<Map<String, Any?>>> {
+    fun validate(subject: Subject, @Body submission: Single<FormSubmission>): Single<HttpResponse<Map<String, Any?>>> {
         return submission.flatMap {
             formService.validationFormSubmissionAsTask(it)
         }.map {
             HttpResponse.ok(it.processed_submission)
         }
     }
-
 
 
     /**
@@ -230,7 +241,7 @@ class FormManagerController(
      * @return validation response
      */
     @Post("/{uuid}/schemas/{schemaUuid}/submit")
-    fun submitFormsSpecificSchema(uuid: UUID, schemaUuid: UUID, @Body submission: Single<FormSubmissionData>): Single<HttpResponse<FormSubmissionResponse>> {
+    fun submitFormsSpecificSchema(subject: Subject, uuid: UUID, schemaUuid: UUID, @Body submission: Single<FormSubmissionData>): Single<HttpResponse<FormSubmissionResponse>> {
         return formService.formExists(uuid).flatMap {
             if (it) {
                 formService.getSchema(schemaUuid)
@@ -246,7 +257,6 @@ class FormManagerController(
             HttpResponse.ok(it)
         }
     }
-
 
 
     @Error

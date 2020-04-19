@@ -1,7 +1,7 @@
 package formsmanager.users.service
 
 import formsmanager.ifDebugEnabled
-import formsmanager.security.HazelcastRealm
+import formsmanager.security.PasswordService
 import formsmanager.users.domain.UserEntity
 import formsmanager.users.repository.UsersHazelcastRepository
 import io.reactivex.Single
@@ -13,7 +13,7 @@ import javax.inject.Singleton
 @Singleton
 class UserService(
         private val userRepository: UsersHazelcastRepository,
-        private val hazelcastRealm: HazelcastRealm
+        private val passwordService: PasswordService
 ) {
 
     companion object {
@@ -118,7 +118,7 @@ class UserService(
             it
 
         }.flatMap {ue ->
-            hazelcastRealm.hashPassword(cleartextPassword).map {
+            passwordService.hashPassword(cleartextPassword).map {
                 ue.copy(
                         emailInfo = ue.emailInfo.copy(emailConfirmed = true),
                         passwordInfo = ue.passwordInfo.copy(

@@ -2,11 +2,14 @@ package formsmanager.security
 
 import formsmanager.ifDebugEnabled
 import formsmanager.users.service.UserService
+import io.micronaut.http.HttpRequest
 import io.micronaut.security.authentication.*
 import io.reactivex.Single
 import org.apache.shiro.authc.AuthenticationException
 import org.apache.shiro.authc.UsernamePasswordToken
+import org.apache.shiro.mgt.SecurityManager
 import org.apache.shiro.subject.Subject
+import org.apache.shiro.subject.support.DefaultSubjectContext
 import org.reactivestreams.Publisher
 import org.slf4j.LoggerFactory
 import javax.inject.Singleton
@@ -31,14 +34,18 @@ fun AuthenticationRequest<*, *>.toUsernamePasswordToken(): UsernamePasswordToken
 @Singleton
 class CustomAuthenticationProvider(
         private val userService: UserService,
-        private val subject: Subject
+        private val securityManager: SecurityManager
 ) : AuthenticationProvider {
 
     companion object {
         private val log = LoggerFactory.getLogger(CustomAuthenticationProvider::class.java)
     }
 
-    override fun authenticate(authenticationRequest: AuthenticationRequest<*, *>): Publisher<AuthenticationResponse> {
+    override fun authenticate(authenticationRequest: AuthenticationRequest<*, *>?): Publisher<AuthenticationResponse> {
+        TODO("DEPRECATED")
+    }
+
+    override fun authenticate(request: HttpRequest<*>, authenticationRequest: AuthenticationRequest<*, *>): Publisher<AuthenticationResponse> {
         return userService.getUser(authenticationRequest.identity.toString())
                 .onErrorResumeNext {
                     // @TODO review
@@ -52,6 +59,7 @@ class CustomAuthenticationProvider(
 
                     } else {
                         //LOGIN
+                        val subject = securityManager.createSubject(DefaultSubjectContext())
                         subject.login(authenticationRequest.toUsernamePasswordToken())
 
                         if (subject.isAuthenticated) {
@@ -72,9 +80,9 @@ class CustomAuthenticationProvider(
                         throw AuthenticationFailureException(AuthenticationFailed(AuthenticationFailureReason.ACCOUNT_LOCKED))
 
                     } else {
-                        //Requires the cast for compiler to pick it up correctly
-                        //--->LOGIN SUCCESS POINT:
-                        UserDetails(ue.id.toString(), listOf(), mapOf(Pair("subject", subject))) as AuthenticationResponse
+
+                        // LOGIN SUCCESS:
+                        UserDetails(ue.emailInfo.email, listOf()) as AuthenticationResponse //Requires the cast for compiler to pick it up correctly
                     }
 
                 }.toFlowable().onErrorReturn {
