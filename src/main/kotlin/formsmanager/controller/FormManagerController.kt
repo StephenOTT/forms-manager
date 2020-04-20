@@ -10,25 +10,16 @@ import formsmanager.validator.FormSubmission
 import formsmanager.validator.FormSubmissionData
 import formsmanager.validator.FormValidationException
 import formsmanager.validator.ValidationResponseInvalid
-import io.micronaut.context.annotation.Requires
-import io.micronaut.core.bind.ArgumentBinder.BindingResult
-import io.micronaut.core.convert.ArgumentConversionContext
-import io.micronaut.core.type.Argument
 import io.micronaut.http.HttpRequest
 import io.micronaut.http.HttpResponse
 import io.micronaut.http.annotation.*
-import io.micronaut.http.bind.binders.TypedRequestArgumentBinder
-import io.micronaut.http.filter.OncePerRequestHttpServerFilter
 import io.micronaut.security.annotation.Secured
-import io.micronaut.security.authentication.Authentication
-import io.micronaut.security.filters.SecurityFilter
 import io.micronaut.security.rules.SecurityRule
 import io.reactivex.Single
 import org.apache.shiro.subject.Subject
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.util.*
-import javax.inject.Singleton
 
 
 @Controller("/form")
@@ -61,7 +52,7 @@ class FormManagerController(
      * @return the created Form
      */
     @Post("/")
-    fun createForm(subject: Subject, @Body form: FormEntityCreator): Single<HttpResponse<FormEntity>> {
+    fun createForm(@Body form: FormEntityCreator): Single<HttpResponse<FormEntity>> {
         return formService.createForm(form.toFormEntity(UUID.randomUUID()))
                 .map {
                     HttpResponse.ok(it)

@@ -71,18 +71,9 @@ class ShiroFactory {
         return environment.securityManager
     }
 
-    /**
-     * The Shiro subject of the HTTP Request.
-     * If Authenticated then returns the Auth Subject
-     * If Anonymous then returns a Subject that represents the Anonymous user
-     */
     @RequestScope
-    @Primary
-    @Named("http-request")
-    fun subject(
-            mnSecurityService: DefaultSecurityService,
-            securityManager: SecurityManager): Subject {
-
+    fun subject(mnSecurityService: DefaultSecurityService,
+                securityManager: SecurityManager): Subject {
         //@TODO review
         val auth = mnSecurityService.authentication
 

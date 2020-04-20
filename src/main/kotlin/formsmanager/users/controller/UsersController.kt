@@ -10,12 +10,12 @@ import io.micronaut.http.annotation.*
 import io.micronaut.security.annotation.Secured
 import io.micronaut.security.rules.SecurityRule
 import io.reactivex.Single
+import org.apache.shiro.subject.Subject
 
 @Controller("/users")
 class UsersController(
         private val userService: UserService
 ) {
-
 
     @Secured(SecurityRule.IS_ANONYMOUS)
     @Post("/register")
