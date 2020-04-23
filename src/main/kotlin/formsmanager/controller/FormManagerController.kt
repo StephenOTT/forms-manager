@@ -4,28 +4,35 @@ import formsmanager.domain.*
 import formsmanager.exception.ErrorMessage
 import formsmanager.exception.FormManagerException
 import formsmanager.exception.NotFoundException
+import formsmanager.hazelcast.query.checkAllowedSortProperties
 import formsmanager.service.FormService
 import formsmanager.submission.FormSubmissionResponse
 import formsmanager.validator.FormSubmission
 import formsmanager.validator.FormSubmissionData
 import formsmanager.validator.FormValidationException
 import formsmanager.validator.ValidationResponseInvalid
+import io.micronaut.data.model.Pageable
 import io.micronaut.http.HttpRequest
 import io.micronaut.http.HttpResponse
 import io.micronaut.http.annotation.*
-import io.micronaut.security.annotation.Secured
-import io.micronaut.security.rules.SecurityRule
+import io.reactivex.Flowable
 import io.reactivex.Single
+import org.apache.shiro.authz.AuthorizationException
+import org.apache.shiro.authz.annotation.RequiresGuest
+import org.apache.shiro.authz.permission.WildcardPermission
+import org.apache.shiro.mgt.SecurityManager
 import org.apache.shiro.subject.Subject
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.util.*
 
 
-@Controller("/form")
-@Secured(SecurityRule.IS_AUTHENTICATED)
+@Controller("/form/{tenant}")
+//@RequiresAuthentication
+@RequiresGuest
 class FormManagerController(
-        private val formService: FormService
+        private val formService: FormService,
+        private val securityManager: SecurityManager
 ) {
 
     companion object {
@@ -39,9 +46,12 @@ class FormManagerController(
      * @exception NotFoundException Could not find form based on Id.
      */
     @Get("/{uuid}")
-    fun getForm(uuid: UUID): Single<HttpResponse<FormEntity>> {
+    fun getForm(subject: Subject, @QueryValue tenant: UUID, @QueryValue uuid: UUID): Single<HttpResponse<FormEntity>> {
         return formService.getForm(uuid)
                 .map {
+                    subject.checkPermission(WildcardPermission("forms:read:${it.owner}"))
+                    it
+                }.map {
                     HttpResponse.ok(it)
                 }
     }
@@ -52,8 +62,8 @@ class FormManagerController(
      * @return the created Form
      */
     @Post("/")
-    fun createForm(@Body form: FormEntityCreator): Single<HttpResponse<FormEntity>> {
-        return formService.createForm(form.toFormEntity(UUID.randomUUID()))
+    fun createForm(subject: Subject, @Body form: FormEntityCreator): Single<HttpResponse<FormEntity>> {
+        return formService.createForm(form.toFormEntity(UUID.randomUUID()), subject)
                 .map {
                     HttpResponse.ok(it)
                 }
@@ -154,11 +164,16 @@ class FormManagerController(
      * @return A array of Form Schema Entities
      */
     @Get("/{uuid}/schemas")
-    fun getAllSchemas(subject: Subject, uuid: UUID): Single<HttpResponse<List<FormSchemaEntity>>> {
-        return formService.getAllSchemas(uuid)
-                .map {
-                    HttpResponse.ok(it)
-                }
+    fun getAllSchemas(subject: Subject, uuid: UUID, pageable: Pageable): Single<HttpResponse<List<FormSchemaEntity>>> {
+       return Single.fromCallable {
+           pageable.checkAllowedSortProperties(listOf("updatedAt"))
+       }.map {
+           formService.getAllSchemas(uuid, pageable)
+       }.flatMap {
+           it.toList()
+       }.map {
+           HttpResponse.ok(it)
+       }
     }
 
     /**
@@ -249,6 +264,20 @@ class FormManagerController(
         }
     }
 
+
+    @Error
+    fun argumentError(request: HttpRequest<*>, exception: IllegalArgumentException): HttpResponse<String> {
+        if (log.isDebugEnabled){
+            log.debug(exception.message, exception)
+        }
+        return HttpResponse.badRequest(exception.message)
+    }
+
+    @Error
+    fun authzError(request: HttpRequest<*>, exception: AuthorizationException): HttpResponse<Unit> {
+        log.error(exception.message, exception) //@TODO move to a Authorization Logger
+        return HttpResponse.unauthorized()
+    }
 
     @Error
     fun formValidationError(request: HttpRequest<*>, exception: FormValidationException): HttpResponse<ValidationResponseInvalid> {

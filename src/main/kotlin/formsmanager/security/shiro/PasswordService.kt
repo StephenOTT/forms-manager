@@ -1,4 +1,4 @@
-package formsmanager.security
+package formsmanager.security.shiro
 
 import formsmanager.ifDebugEnabled
 import io.reactivex.Single
@@ -10,6 +10,10 @@ import org.apache.shiro.crypto.hash.Sha512Hash
 import org.slf4j.LoggerFactory
 import javax.inject.Singleton
 
+/**
+ * Provides a service for hashing passwords.
+ * Hash Iteration Count and Algorithm name is used in Companion Object to configure Password Service and Realm Password Matchers
+ */
 @Singleton
 class PasswordService {
 

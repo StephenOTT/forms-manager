@@ -7,24 +7,24 @@ import formsmanager.users.service.UserService
 import io.micronaut.http.HttpRequest
 import io.micronaut.http.HttpResponse
 import io.micronaut.http.annotation.*
-import io.micronaut.security.annotation.Secured
-import io.micronaut.security.rules.SecurityRule
 import io.reactivex.Single
-import org.apache.shiro.subject.Subject
+import org.apache.shiro.authz.annotation.RequiresGuest
+import java.util.*
 
-@Controller("/users")
+@Controller("/users/{tenant}")
+@RequiresGuest
 class UsersController(
         private val userService: UserService
 ) {
 
-    @Secured(SecurityRule.IS_ANONYMOUS)
     @Post("/register")
-    fun register(@Body registration: UserRegistration): Single<HttpResponse<UserRegistrationResponse>> {
-        return userService.userExists(registration.email).flatMap { exists ->
+    fun register(@QueryValue tenant: UUID, @Body registration: UserRegistration): Single<HttpResponse<UserRegistrationResponse>> {
+        return userService.userExists(registration.email, tenant).flatMap { exists ->
             if (exists) {
                 Single.error(IllegalArgumentException("Email already exists."))
             } else {
-                userService.createUser(registration.email)
+                //@TODO create a Tenant Map Registery to validate that the Tenant Exists.
+                userService.createUser(registration.email, tenant)
             }
         }.map {
             HttpResponse.created(
@@ -33,11 +33,10 @@ class UsersController(
         }
     }
 
-    @Secured(SecurityRule.IS_ANONYMOUS)
     @Post("/register/complete")
     fun completeRegistration(@Body body: CompleteRegistrationRequest): Single<HttpResponse<UserRegistrationResponse>>{
         return userService.completeRegistration(body.id, body.email, body.emailConfirmToken, body.pwdResetToken, body.cleartextPassword) .map {
-            body.destroyPwd()
+            body.destroyPwd() //@TODO review if this is needed
             HttpResponse.created(UserRegistrationResponse("completed"))
         }
     }

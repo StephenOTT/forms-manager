@@ -1,4 +1,4 @@
-package formsmanager.security
+package formsmanager.security.shiro.jwt
 
 import com.nimbusds.jwt.JWT
 import org.apache.shiro.authc.AuthenticationToken
@@ -6,19 +6,18 @@ import org.apache.shiro.authc.AuthenticationToken
 /**
  * Shiro AuthenticationToken for JWT Tokens
  */
-data class JwtToken(val jwt: JWT) : AuthenticationToken {
+data class JwtToken(private val subjectPrincipal: String) : AuthenticationToken {
 
     /**
-     * Returns the JWT object
+     * Not used
      */
-    override fun getCredentials(): JWT {
-        return jwt
+    override fun getCredentials() {
     }
 
     /**
      * Returns subject from JWT
      */
     override fun getPrincipal(): String {
-        return jwt.jwtClaimsSet.subject
+        return subjectPrincipal
     }
 }

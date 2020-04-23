@@ -1,16 +1,19 @@
 package formsmanager.domain
 
+import com.fasterxml.jackson.annotation.JsonProperty
 import formsmanager.hazelcast.map.CrudableObject
 import formsmanager.respository.FormSchemaEntityWrapper
+import io.micronaut.core.annotation.Introspected
 import io.swagger.v3.oas.annotations.media.Schema
 import java.time.Instant
 import java.util.*
 
 @Schema
+@Introspected
 data class FormSchemaEntity(
         override val id: UUID = UUID.randomUUID(),
         override val ol: Long = 0,
-        val formId: UUID,
+        @JsonProperty("form_id") val formId: UUID,
         var schema: FormSchema, //@TODO
         override val createdAt: Instant = Instant.now(),
         override var updatedAt: Instant = createdAt,

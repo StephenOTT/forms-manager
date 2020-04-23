@@ -1,4 +1,4 @@
-package formsmanager.security
+package formsmanager.security.shiro.jwt
 
 import com.nimbusds.jwt.JWT
 import org.apache.shiro.authc.AuthenticationInfo
@@ -10,8 +10,10 @@ import org.apache.shiro.subject.SimplePrincipalCollection
  * This is used only for JWT Realm Authentication / Shiro Login with a JWT.
  */
 data class JwtAuthenticationInfo(val token: JwtToken): AuthenticationInfo {
-    override fun getCredentials(): JWT {
-        return token.credentials
+    /**
+     * Not used
+     */
+    override fun getCredentials() {
     }
 
     override fun getPrincipals(): PrincipalCollection {

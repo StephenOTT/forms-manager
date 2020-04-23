@@ -2,12 +2,9 @@ package formsmanager.users.domain
 
 import formsmanager.domain.*
 import formsmanager.hazelcast.map.CrudableObject
-import formsmanager.security.Role
+import formsmanager.security.shiro.domain.Role
 import formsmanager.users.repository.UserEntityWrapper
 import io.swagger.v3.oas.annotations.media.Schema
-import org.apache.shiro.authz.Permission
-import org.apache.shiro.authz.permission.WildcardPermission
-import java.security.AlgorithmConstraints
 import java.time.Instant
 import java.util.*
 
@@ -25,7 +22,7 @@ data class UserEntity(
 
         val rolesInfo: RolesInfo,
 
-        override val tenant: String? = null,
+        override val tenant: UUID,
 
         override val createdAt: Instant = Instant.now(),
 
@@ -39,12 +36,14 @@ data class UserEntity(
 
         const val USER_ROLE: String = "user_role"
 
-        fun newUser(email: String, tenant: String? = null): UserEntity{
+        fun newUser(email: String, tenant: UUID): UserEntity{
             return UserEntity(
                     emailInfo = EmailInfo(email),
                     passwordInfo = PasswordInfo(resetPasswordInfo = ResetPasswordInfo()),
                     accountControlInfo = AccountControlInfo(),
-                    rolesInfo = RolesInfo(setOf(Role("USER_ROLE", setOf("forms:create")))),
+                    rolesInfo = RolesInfo(setOf(Role("USER_ROLE",
+                            setOf("forms:read,create:business_unit1")
+                    ))),
                     tenant = tenant
             )
         }

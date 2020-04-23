@@ -2,9 +2,10 @@ package formsmanager.domain
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import java.time.Instant
+import java.util.*
 
 interface TenantField{
-    val tenant: String?
+    val tenant: UUID
 }
 
 interface TimestampFields{

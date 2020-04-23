@@ -12,6 +12,7 @@ import org.apache.shiro.subject.Subject
 import org.apache.shiro.subject.support.DefaultSubjectContext
 import org.reactivestreams.Publisher
 import org.slf4j.LoggerFactory
+import java.util.*
 import javax.inject.Singleton
 
 
@@ -22,6 +23,7 @@ import javax.inject.Singleton
  * Used for converting micronaut auth reqest into a Shiro UsernamePasswordToken
  */
 fun AuthenticationRequest<*, *>.toUsernamePasswordToken(): UsernamePasswordToken {
+    //@TODO refactor this with a new UsernamePasswordToken that accepts a Tenant.  Must also refactor the UserDetails class for Micronaut, and the default Micronaut security controller for /login
     return UsernamePasswordToken(this.identity.toString(), this.secret.toString())
 }
 
@@ -29,7 +31,6 @@ fun AuthenticationRequest<*, *>.toUsernamePasswordToken(): UsernamePasswordToken
  * Authenticates with Shiro.
  * The Shiro subject is put into a UserDetails Attribute map in the key "subject".
  * You can inject "Subject" Singleton throughout out the app or use UserDetails to get the subject through the attributes map.
- * Subject is created on a RequestScope Singleton: meaning the subject is created and destroyed within the scope of the HTTP request.
  */
 @Singleton
 class CustomAuthenticationProvider(
@@ -46,7 +47,13 @@ class CustomAuthenticationProvider(
     }
 
     override fun authenticate(request: HttpRequest<*>, authenticationRequest: AuthenticationRequest<*, *>): Publisher<AuthenticationResponse> {
-        return userService.getUser(authenticationRequest.identity.toString())
+        val identity = authenticationRequest.identity.toString()
+
+        //@TODO refactor this with a new UsernamePasswordToken that accepts a Tenant.  Must also refactor the UserDetails class for Micronaut, and the default Micronaut security controller for /login
+        val email = identity.substringAfter(":", "")
+        val tenant = UUID.fromString(identity.substringBefore(":", ""))
+
+        return userService.getUser(email, tenant)
                 .onErrorResumeNext {
                     // @TODO review
                     // Could not find the email in users

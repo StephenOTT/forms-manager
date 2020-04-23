@@ -1,11 +1,14 @@
-package formsmanager.security
+package formsmanager.security.shiro.realm
 
+import formsmanager.security.shiro.jwt.JwtAuthenticationInfo
+import formsmanager.security.shiro.jwt.JwtToken
 import formsmanager.users.service.UserService
 import io.reactivex.schedulers.Schedulers
 import org.apache.shiro.authc.AuthenticationInfo
 import org.apache.shiro.authc.AuthenticationToken
 import org.apache.shiro.realm.AuthenticatingRealm
 import org.slf4j.LoggerFactory
+import java.util.*
 import javax.inject.Singleton
 
 /**
@@ -30,8 +33,12 @@ class JwtAuthenticationRealm(
     override fun doGetAuthenticationInfo(token: AuthenticationToken): AuthenticationInfo? {
         if (token is JwtToken) {
 
+            //@TODO refactor to update the Micronaut JWT to include a tenant claim.
+            val email = token.principal.substringAfter(":", "")
+            val tenant = UUID.fromString(token.principal.substringBefore(":", ""))
+
             return kotlin.runCatching {
-                userService.getUser(token.principal).map {
+                userService.getUser(email, tenant).map {
                     if (it.accountActive()){
                         JwtAuthenticationInfo(token)
                     } else {

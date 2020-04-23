@@ -1,19 +1,26 @@
 package formsmanager.respository
 
+import com.fasterxml.jackson.databind.ObjectMapper
 import com.hazelcast.core.HazelcastInstance
 import com.hazelcast.query.Predicates
 import formsmanager.domain.FormSchemaEntity
+import formsmanager.hazelcast.query.PagingUtils.Companion.createPagingPredicate
+import formsmanager.hazelcast.query.PagingUtils.Companion.createPagingPredicateComparators
 import formsmanager.hazelcast.annotation.MapStore
+import formsmanager.hazelcast.map.HazelcastCrudRepository
 import formsmanager.hazelcast.map.persistence.CrudableMapStoreRepository
 import formsmanager.hazelcast.map.persistence.CurdableMapStore
-import formsmanager.hazelcast.map.HazelcastCrudRepository
 import formsmanager.hazelcast.map.persistence.MapStoreItemWrapperEntity
+import formsmanager.hazelcast.query.beanDescription
 import io.micronaut.data.jdbc.annotation.JdbcRepository
+import io.micronaut.data.model.Pageable
 import io.micronaut.data.model.query.builder.sql.Dialect
-import io.reactivex.Single
+import io.reactivex.Flowable
+import org.reactivestreams.Publisher
 import java.util.*
 import javax.inject.Singleton
 import javax.persistence.Entity
+
 
 /**
  * Implementation providing a Form Schema IMDG IMap CRUD operations repository.
@@ -21,26 +28,43 @@ import javax.persistence.Entity
 @Singleton
 @MapStore(FormSchemasMapStore::class, FormSchemaHazelcastRepository.MAP_NAME)
 class FormSchemaHazelcastRepository(
-        private val hazelcastInstance: HazelcastInstance) :
+        hazelcastInstance: HazelcastInstance,
+        private val mapper: ObjectMapper
+) :
         HazelcastCrudRepository<UUID, FormSchemaEntity>(
                 hazelcastInstance = hazelcastInstance,
                 mapName = MAP_NAME
         ) {
 
-    companion object{
+    companion object {
         const val MAP_NAME = "form-schemas"
     }
 
+
     /**
-     * @param itemKey The UUID key of the Form
-     * @return List of FormSchema for the specified Form Schema
+     * @param formId The UUID key of the Form
+     * @param pageable A Pageable instance that provides paging and sorting instructions.  Defaults value is a pageable that limits to 10 items.
+     * @return Flowable of FormSchema for the specified Form Schema
      */
-    fun getSchemasForForm(itemKey: UUID): Single<List<FormSchemaEntity>> {
-        return Single.fromCallable {
-            mapService.values(Predicates.equal("formId", itemKey)).toList()
+    fun getSchemasForForm(formId: UUID, pageable: Pageable = Pageable.from(0)): Flowable<FormSchemaEntity> {
+        return Flowable.fromCallable {
+            // Gets the jackson BeanDescription for the entity
+            val beanDesc = mapper.beanDescription<FormSchemaEntity>()
+
+            val comparators = createPagingPredicateComparators<UUID, FormSchemaEntity>(beanDesc, pageable)
+            createPagingPredicate(
+                    Predicates.equal("formId", formId),
+                    comparators,
+                    pageable.size,
+                    pageable.number
+            )
+
+        }.flatMapIterable {
+            mapService.values(it)
         }
     }
 }
+
 
 /**
  * Entity for storage in a IMDG MapStore for FormSchemaEntity

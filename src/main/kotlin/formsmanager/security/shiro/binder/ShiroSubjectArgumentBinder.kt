@@ -1,5 +1,7 @@
-package formsmanager.controller
+package formsmanager.security.shiro.binder
 
+import formsmanager.ifDebugEnabled
+import formsmanager.security.ShiroMicronautSecurityService
 import io.micronaut.context.annotation.Requires
 import io.micronaut.core.bind.ArgumentBinder.BindingResult
 import io.micronaut.core.convert.ArgumentConversionContext
@@ -9,14 +11,17 @@ import io.micronaut.http.bind.binders.TypedRequestArgumentBinder
 import io.micronaut.http.filter.OncePerRequestHttpServerFilter
 import io.micronaut.security.filters.SecurityFilter
 import org.apache.shiro.subject.Subject
+import org.slf4j.LoggerFactory
 import java.util.*
 import javax.inject.Singleton
 
 @Singleton
-@Requires(classes=[Subject::class])
+@Requires(classes = [Subject::class])
 class ShiroSubjectArgumentBinder(
-        private val requestSubject: Subject
+        private val shiroMicronautSecurityService: ShiroMicronautSecurityService
 ) : TypedRequestArgumentBinder<Subject> {
+
+    private val log = LoggerFactory.getLogger(ShiroSubjectArgumentBinder::class.java)
 
     override fun argumentType(): Argument<Subject> {
         return Argument.of(Subject::class.java)
@@ -24,22 +29,9 @@ class ShiroSubjectArgumentBinder(
 
     override fun bind(context: ArgumentConversionContext<Subject>, source: HttpRequest<*>): BindingResult<Subject> {
         return (if (source.attributes.contains(OncePerRequestHttpServerFilter.getKey(SecurityFilter::class.java))) {
-            // based on the design of the AuthenticationArgumentBinder
-//            val auth = source.getUserPrincipal(ShiroAuthenicationJwtClaimsSetAdapter::class.java)
+            log.ifDebugEnabled { "Shiro Subject TypedRequestArgumentBinder has started." }
 
-//            if (auth.isPresent){
-//                 Get the Subject from the Authentication's attributes
-//               val authSubject: Subject = kotlin.runCatching {
-//                    auth.get().shrioSubject
-//                }.getOrElse {
-//                   throw it //@TODO review for better error message handling
-//               }
-                BindingResult { Optional.of(requestSubject) }
-//                BindingResult { Optional.of(authSubject) }
-
-//            } else {
-//                BindingResult.EMPTY
-//            }
+            BindingResult {Optional.of(shiroMicronautSecurityService.getSubjectFromHttpRequest(source))}
 
         } else {
             BindingResult.UNSATISFIED

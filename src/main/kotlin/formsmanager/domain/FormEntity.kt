@@ -27,7 +27,7 @@ data class FormEntity(
 
         val type: FormType = FormType.FORMIO,
 
-        override val tenant: String? = null,
+        override val tenant: UUID,
 
         override val createdAt: Instant = Instant.now(),
 
@@ -62,7 +62,7 @@ data class FormEntityCreator(
 
         var defaultSchema: UUID? = null,
 
-        val tenant: String? = null,
+        val tenant: UUID,
 
         val data: Map<String, Any?> = mapOf(),
 
@@ -72,6 +72,10 @@ data class FormEntityCreator(
 
         val enabled: Boolean = true
 ){
+    /**
+     * Convert to FormEntity.
+     * Id is a parameter to allow Creators to be used for existing entities (such as when doing a Update)
+     */
     fun toFormEntity(id: UUID): FormEntity{
         return FormEntity(
                 id = id,

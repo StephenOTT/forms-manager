@@ -1,7 +1,7 @@
 package formsmanager.users.service
 
 import formsmanager.ifDebugEnabled
-import formsmanager.security.PasswordService
+import formsmanager.security.shiro.PasswordService
 import formsmanager.users.domain.UserEntity
 import formsmanager.users.repository.UsersHazelcastRepository
 import io.reactivex.Single
@@ -20,15 +20,16 @@ class UserService(
         private val log = LoggerFactory.getLogger(UserService::class.java)
     }
 
-    fun createUser(email: String): Single<UserEntity> {
-        return userRepository.userExists(email).map {
+    fun createUser(email: String, tenant: UUID): Single<UserEntity> {
+        //@TODO create a Tenant Map Registery to validate that the Tenant Exists.
+        return userRepository.userExists(email, tenant).map {
             if (it) {
-                throw IllegalArgumentException("Unable to create user.  Email already exists")
+                throw IllegalArgumentException("Unable to create user. Email already exists")
             } else {
-                UserEntity.newUser(email)
+                UserEntity.newUser(email, tenant)
             }
         }.doOnSuccess {
-            log.ifDebugEnabled { "User Entity being Created: $it" }
+            log.ifDebugEnabled { "User Entity being Created: ${it}." }
         }.flatMap {
             userRepository.create(it)
         }
@@ -41,9 +42,9 @@ class UserService(
     /**
      * @exception IllegalArgumentException if the email does not exist.
      */
-    fun getUser(email: String): Single<UserEntity> {
+    fun getUser(email: String, tenant: UUID): Single<UserEntity> {
         //@TODO add index to Users Map for the email property
-        return userRepository.findByEmail(email)
+        return userRepository.findByEmail(email, tenant)
     }
 
     fun resetPassword() {
@@ -54,10 +55,15 @@ class UserService(
         return userRepository.exists(id)
     }
 
-    fun userExists(email: String): Single<Boolean> {
-        return userRepository.userExists(email)
+    fun userExists(email: String, tenant: UUID): Single<Boolean> {
+        return userRepository.userExists(email, tenant)
     }
 
+    /**
+     * Updates the user entity.
+     * Provides full control to update all fields in the user entity.
+     * **Be careful when using this method.**
+     */
     fun updateUser(userEntity: UserEntity): Single<UserEntity> {
         return userRepository.update(userEntity) { originalItem, newItem ->
             //Update logic for automated fields @TODO consider automation with annotations
@@ -68,7 +74,6 @@ class UserService(
                     updatedAt = Instant.now()
             )
         }
-
     }
 
     fun lockUser() {

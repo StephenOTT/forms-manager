@@ -40,6 +40,9 @@ Notes:
 1. Use ReliableTopic for broadcasts / Messages that do not have a single destination and can be received by many.
 1. Added a InjectAware annotation to tell MN when to inject context 
 1. If custom code needs to be shipped around to each member (the member does not actual have the code), then Jet tasks should be used.
+1. If required to use confirmation authentication (to perform a sensitive action), then we do JWT + Password login on the endpoint.
+1. Shiro Annotations supported through Micronaut SecurityRule beans
+1. Issue with performance on Paging Predicate for Hazelcast: https://github.com/hazelcast/hazelcast/issues/10828.  A replacement of the Hazelcast query engine is supposed to be introduced for 4.1/4.2 that would "fix" this issue.  Timeline is ~Fall 2020.
 
 questions
 1. Member selection for distributed tasks: To only have specific nodes work on specific tasks.

@@ -1,4 +1,4 @@
-package formsmanager.security
+package formsmanager.security.shiro.domain
 
 import io.swagger.v3.oas.annotations.media.Schema
 import org.apache.shiro.authz.Permission

@@ -40,7 +40,7 @@ class FormsMapStore(mapStoreRepository: FormsMapStoreRepository) :
 @Singleton
 @MapStore(FormsMapStore::class, FormHazelcastRepository.MAP_NAME)
 class FormHazelcastRepository(
-        private val hazelcastInstance: HazelcastInstance) :
+        hazelcastInstance: HazelcastInstance) :
         HazelcastCrudRepository<UUID, FormEntity>(
                 hazelcastInstance = hazelcastInstance,
                 mapName = MAP_NAME

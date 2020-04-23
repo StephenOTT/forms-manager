@@ -44,27 +44,35 @@ class UsersMapStore(mapStoreRepository: UsersMapStoreRepository) :
 @Singleton
 @MapStore(UsersMapStore::class, UsersHazelcastRepository.MAP_NAME)
 class UsersHazelcastRepository(
-        private val hazelcastInstance: HazelcastInstance) :
+        hazelcastInstance: HazelcastInstance) :
         HazelcastCrudRepository<UUID, UserEntity>(
                 hazelcastInstance = hazelcastInstance,
                 mapName = MAP_NAME
         ) {
 
-    companion object{
+    companion object {
         const val MAP_NAME = "users"
     }
 
     //@TODO add index for email address
 
-    fun userExists(email: String): Single<Boolean> {
+    fun userExists(email: String, tenant: UUID): Single<Boolean> {
+        //@TODO Create a Map Index for Email and Tenant
         return Single.fromCallable {
-            mapService.values(Predicates.equal("emailInfo.email", email)).size == 1
+            mapService.values(Predicates.and(
+                    Predicates.equal<String, UUID>("emailInfo.email", email),
+                    Predicates.equal<String, UUID>("tenant", tenant))
+            ).size == 1
         }
     }
 
-    fun findByEmail(email: String): Single<UserEntity> {
-        return Single.fromCallable{
-            mapService.values(Predicates.equal("emailInfo.email", email)).single()
+    fun findByEmail(email: String, tenant: UUID): Single<UserEntity> {
+        //@TODO Create a Map Index for Email and Tenant
+        return Single.fromCallable {
+            mapService.values(Predicates.and(
+                    Predicates.equal<String, UUID>("emailInfo.email", email),
+                    Predicates.equal<String, UUID>("tenant", tenant))
+            ).single()
         }
     }
 
