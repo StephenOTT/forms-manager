@@ -63,6 +63,8 @@ todo:
 1. Eventually move to an ID Generator that is not built in UUID, as UUID is only 99.99 and could be collisions
 1. Add user registration limits for username and password: length, password complexity, etc
 1. Create a user Entity update page for Admin and for Regular users.
+1. ** deal with scenarios of who owns tenants and groups: and how someone can assign the owner of an object: (Likely a permission)** 
+
 
 Python execution service:
 
