@@ -1,6 +1,10 @@
 package formsmanager.domain
 
 import com.fasterxml.jackson.annotation.JsonProperty
+import formsmanager.core.ConfigField
+import formsmanager.core.DataField
+import formsmanager.core.EnabledField
+import formsmanager.core.TimestampFields
 import formsmanager.hazelcast.map.CrudableObject
 import formsmanager.respository.FormSchemaEntityWrapper
 import io.micronaut.core.annotation.Introspected

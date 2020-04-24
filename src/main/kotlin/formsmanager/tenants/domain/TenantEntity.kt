@@ -1,14 +1,14 @@
-package formsmanager.domain
+package formsmanager.tenants.domain
 
 import formsmanager.core.*
 import formsmanager.hazelcast.map.CrudableObject
-import formsmanager.respository.FormEntityWrapper
+import formsmanager.tenants.repository.TenantEntityWrapper
 import io.swagger.v3.oas.annotations.media.Schema
 import java.time.Instant
 import java.util.*
 
 @Schema
-data class FormEntity(
+data class TenantEntity(
 
         override val id: UUID = UUID.randomUUID(),
 
@@ -17,12 +17,6 @@ data class FormEntity(
         val name: String,
 
         val description: String? = null,
-
-        val defaultSchema: UUID? = null,
-
-        val type: FormType = FormType.FORMIO,
-
-        override val tenant: UUID,
 
         override val createdAt: Instant = Instant.now(),
 
@@ -40,15 +34,14 @@ data class FormEntity(
         ConfigField,
         OwnerField,
         EnabledField,
-        TenantField,
         CrudableObject<UUID> {
-    override fun toEntityWrapper(): FormEntityWrapper {
-        return FormEntityWrapper(id, this::class.qualifiedName!!, this)
+    override fun toEntityWrapper(): TenantEntityWrapper {
+        return TenantEntityWrapper(id, this::class.qualifiedName!!, this)
     }
 }
 
 @Schema
-data class FormEntityCreator(
+data class TenantEntityCreator(
         var ol: Long = 0,
 
         var name: String,
@@ -66,17 +59,15 @@ data class FormEntityCreator(
         val enabled: Boolean = true
 ){
     /**
-     * Convert to FormEntity.
+     * Convert to TenantEntity.
      * Id is a parameter to allow Creators to be used for existing entities (such as when doing a Update)
      */
-    fun toFormEntity(id: UUID, tenant: UUID): FormEntity{
-        return FormEntity(
+    fun toTenantEntity(id: UUID): TenantEntity{
+        return TenantEntity(
                 id = id,
                 ol = ol,
                 name = name,
                 description = description,
-                defaultSchema = defaultSchema,
-                tenant = tenant,
                 data = data,
                 config = config,
                 owner = owner,

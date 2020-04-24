@@ -85,9 +85,9 @@ class HazelcastRealm(
         check(principals.primaryPrincipal is PrimaryPrincipal) {
             "Unsupported Primary Principal found. Only EmailTenantPrincipal is supported as Primary Principal for this realm"
         }
-        val userId = (principals.primaryPrincipal as PrimaryPrincipal).userId
+        val primPrincipal: PrimaryPrincipal = (principals.primaryPrincipal as PrimaryPrincipal)
 
-        return userService.getUser(userId).map { ue ->
+        return userService.getUser(primPrincipal.userId, primPrincipal.tenant).map { ue ->
             val authz = SimpleAuthorizationInfo(ue.rolesInfo.roles.map { it.name }.toSet())
 
             ue.rolesInfo.roles.forEach {

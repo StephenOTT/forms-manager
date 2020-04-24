@@ -1,12 +1,15 @@
 package formsmanager.submission
 
 import com.fasterxml.jackson.annotation.JsonInclude
+import formsmanager.domain.FormEntity
+import formsmanager.domain.FormSchemaEntity
 import formsmanager.service.FormService
 import formsmanager.service.FormValidationService
 import formsmanager.validator.FormSubmission
 import formsmanager.validator.ValidationResponseValid
 import io.micronaut.context.annotation.Requires
 import io.reactivex.Single
+import org.apache.shiro.subject.Subject
 import javax.inject.Singleton
 
 
@@ -20,7 +23,7 @@ data class FormSubmissionResponse(
 
 interface SubmissionStrategy {
 
-    fun process(formSubmission: FormSubmission): Single<FormSubmissionResponse>
+    fun process(formSubmission: FormSubmission, formEntity: FormEntity?, formSchemaEntity: FormSchemaEntity?, dryRun: Boolean, subject: Subject?): Single<FormSubmissionResponse>
 
 }
 
@@ -34,7 +37,7 @@ interface SubmissionStrategy {
 class SubmissionHandler(
         private val formValidationService: FormValidationService
 ) : SubmissionStrategy{
-    override fun process(formSubmission: FormSubmission): Single<FormSubmissionResponse> {
+    override fun process(formSubmission: FormSubmission, formEntity: FormEntity?, formSchemaEntity: FormSchemaEntity?, dryRun: Boolean, subject: Subject?): Single<FormSubmissionResponse> {
         // Where you can fully customize the Form Submission Handling
         return formValidationService.validationFormSubmissionAsTask(formSubmission).map {
             FormSubmissionResponse(it)

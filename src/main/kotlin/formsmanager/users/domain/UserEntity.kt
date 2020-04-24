@@ -1,6 +1,7 @@
 package formsmanager.users.domain
 
-import formsmanager.domain.*
+import formsmanager.core.TenantField
+import formsmanager.core.TimestampFields
 import formsmanager.hazelcast.map.CrudableObject
 import formsmanager.security.shiro.domain.Role
 import formsmanager.users.repository.UserEntityWrapper
@@ -34,17 +35,22 @@ data class UserEntity(
 
     companion object {
 
-        const val USER_ROLE: String = "user_role"
+        const val USER_ROLE: String = "USER_ROLE"
 
-        fun newUser(email: String, tenant: UUID): UserEntity{
+        fun defaultUserRole(tenant: UUID, userId: UUID): Role{
+            return Role(USER_ROLE, setOf(
+                    "users:read,edit:${tenant}:${userId}"
+            ))
+        }
+
+        fun newUser(email: String, tenant: UUID, userId: UUID = UUID.randomUUID()): UserEntity{
             return UserEntity(
+                    id = userId,
                     emailInfo = EmailInfo(email),
                     passwordInfo = PasswordInfo(resetPasswordInfo = ResetPasswordInfo()),
                     accountControlInfo = AccountControlInfo(),
-                    rolesInfo = RolesInfo(setOf(Role("USER_ROLE",
-                            setOf("forms:read,create:business_unit1")
-                    ))),
-                    tenant = tenant
+                    tenant = tenant,
+                    rolesInfo = RolesInfo(setOf(defaultUserRole(tenant, userId)))
             )
         }
     }

@@ -10,6 +10,7 @@ import formsmanager.submission.FormSubmissionResponse
 import formsmanager.submission.SubmissionHandler
 import formsmanager.validator.*
 import io.micronaut.data.model.Pageable
+import io.micronaut.http.HttpResponse
 import io.micronaut.http.client.exceptions.HttpClientResponseException
 import io.reactivex.Flowable
 import io.reactivex.Single
@@ -43,11 +44,13 @@ class FormService(
      * @param formEntity Form to be created/inserted
      * @param subject optional Shiro Subject.  If Subject is provided, then security validation will occur.
      */
-    fun createForm(formEntity: FormEntity, subject: Subject? = null): Single<FormEntity> {
+    fun createForm(formEntity: FormEntity, tenant: UUID, subject: Subject? = null): Single<FormEntity> {
         return Single.fromCallable {
-//            subject?.let {
-//                subject.checkPermission(WildcardPermission("forms:create:${formEntity.owner}:${formEntity.tenant}"))
-//            }
+            require(tenant == formEntity.tenant, lazyMessage = { "Invalid Tenant Match." })
+
+            subject?.let {
+                subject.checkPermission(WildcardPermission("forms:create:${formEntity.owner}:${formEntity.tenant}"))
+            }
         }.flatMap {
             formHazelcastRepository.create(formEntity)
         }
@@ -57,14 +60,14 @@ class FormService(
      * Get/find a Form
      * @param formId Form ID
      */
-    fun getForm(formId: UUID, tenant: UUID? = null, subject: Subject? = null): Single<FormEntity> {
+    fun getForm(formId: UUID, tenant: UUID, subject: Subject? = null): Single<FormEntity> {
         return formHazelcastRepository.find(formId).map { fe ->
-            tenant?.let {
-                require(it == fe.tenant, lazyMessage = {"Invalid Tenant Match."})
-            }
-            subject?.let { sub->
+            require(tenant == fe.tenant, lazyMessage = { "Invalid Tenant Match." })
+
+            subject?.let {
                 subject.checkPermission(WildcardPermission("forms:read:${fe.owner}:${fe.tenant}"))
             }
+
             fe
         }
     }
@@ -81,16 +84,24 @@ class FormService(
      * Update/overwrite Form
      * @param formEntity Form to be updated/overwritten
      */
-    fun updateForm(formEntity: FormEntity): Single<FormEntity> {
-        return formHazelcastRepository.update(formEntity) { originalItem, newItem ->
-            //Update logic for automated fields @TODO consider automation with annotations
-            newItem.copy(
-                    ol = originalItem.ol + 1,
-                    id = originalItem.id,
-                    type = originalItem.type,
-                    createdAt = originalItem.createdAt,
-                    updatedAt = Instant.now()
-            )
+    fun updateForm(formEntity: FormEntity, tenant: UUID, subject: Subject? = null): Single<FormEntity> {
+        return getForm(formEntity.id, tenant).map { fe ->
+            require(tenant == fe.tenant, lazyMessage = { "Invalid Tenant Match." })
+
+            subject?.let {
+                subject.checkPermission(WildcardPermission("forms:update:${fe.owner}:${fe.tenant}"))
+            }
+        }.flatMap {
+            formHazelcastRepository.update(formEntity) { originalItem, newItem ->
+                //Update logic for automated fields @TODO consider automation with annotations
+                newItem.copy(
+                        ol = originalItem.ol + 1,
+                        id = originalItem.id,
+                        type = originalItem.type,
+                        createdAt = originalItem.createdAt,
+                        updatedAt = Instant.now()
+                )
+            }
         }
     }
 
@@ -98,14 +109,26 @@ class FormService(
      * Update/overwrite Form Schema
      * @param formSchemaEntity Form Schema to be updated/overwritten
      */
-    fun updateFormSchema(formId: UUID, schemaEntity: FormSchemaEntity, isDefault: Boolean? = false): Single<FormSchemaEntity> {
-        return formHazelcastRepository.find(formId).flatMap { form ->
-            require(formId == schemaEntity.formId) {
+    fun updateFormSchema(formId: UUID, schemaEntity: FormSchemaEntity, isDefault: Boolean = false, tenant: UUID, subject: Subject? = null): Single<FormSchemaEntity> {
+        return getForm(formId, tenant).map { fe ->
+            require(fe.id == schemaEntity.formId) {
                 "Form $formId does not match Id in provided schema."
             }
-            //@TODO consider a lock for form
 
-            // Create the form schema
+            if (isDefault) {
+                // Check if they are allowed to update the Form with the Default key.
+                // They have the permission to update the Schema, but not the permission to make it the default form.
+                subject?.let {
+                    subject.checkPermission(WildcardPermission("forms:update:${fe.owner}:${fe.tenant}"))
+                }
+            }
+            fe
+        }.flatMap { fe ->
+
+            subject?.let {
+                subject.checkPermission(WildcardPermission("form_schemas:update:${fe.owner}:${fe.tenant}"))
+            }
+
             formSchemaHazelcastRepository.update(schemaEntity) { originalItem, newItem ->
                 // Update logic for automated fields @TODO consider automation with annotations
                 newItem.copy(
@@ -115,21 +138,25 @@ class FormService(
                         updatedAt = Instant.now()
                 )
             }.map { entity ->
-                Pair(form, entity)
+                Pair(fe, entity)
             }
 
         }.flatMap {
+            //@TODO consider adding a lock on the form entity incase of race condition between update of schema and update of form with default value.
             //If the form schema was created then update the Form with the default schema ID
             formHazelcastRepository.update(it.first) { old, new ->
-                old.copy(defaultSchema = new.defaultSchema)
+                old.copy(
+                        ol = old.ol + 1,
+                        defaultSchema = new.defaultSchema
+                )
+
             }.map { res ->
                 Pair(res, it.second)
             }
+
         }.map {
-            // Return the schema
             it.second
         }
-
     }
 
     /**
@@ -138,27 +165,45 @@ class FormService(
      * @param schemaEntity Form Schema
      * @param isDefault if the schema should be made the default schema for the Form.  This will make a update to the Form object.
      */
-    fun createSchema(formId: UUID, schemaEntity: FormSchemaEntity, isDefault: Boolean? = false): Single<FormSchemaEntity> {
-        return formHazelcastRepository.find(formId).flatMap { form ->
-            require(formId == schemaEntity.formId) {
+    fun createSchema(formId: UUID, schemaEntity: FormSchemaEntity, isDefault: Boolean = false, tenant: UUID, subject: Subject? = null): Single<FormSchemaEntity> {
+        return getForm(formId, tenant).map { fe ->
+            require(fe.id == schemaEntity.formId) {
                 "Form $formId does not match Id in provided schema."
             }
-            //@TODO consider a lock for form
+
+            if (isDefault) {
+                // Check if they are allowed to update the Form with the Default key.
+                // They have the permission to update the Schema, but not the permission to make it the default form.
+                subject?.let {
+                    subject.checkPermission(WildcardPermission("forms:update:${fe.owner}:${fe.tenant}"))
+                }
+            }
+            fe
+        }.flatMap { fe ->
+
+            subject?.let {
+                subject.checkPermission(WildcardPermission("form_schemas:create:${fe.owner}:${fe.tenant}"))
+            }
 
             // Create the form schema
             formSchemaHazelcastRepository.create(schemaEntity).map { createdSchema ->
-                Pair(form, createdSchema)
+                Pair(fe, createdSchema)
             }
 
         }.flatMap {
+            //@TODO consider adding a lock on the form entity incase of race condition between update of schema and update of form with default value.
             //If the form schema was created then update the Form with the default schema ID
             formHazelcastRepository.update(it.first) { old, new ->
-                old.copy(defaultSchema = new.defaultSchema)
+                old.copy(
+                        ol = old.ol + 1,
+                        defaultSchema = new.defaultSchema
+                )
+
             }.map { res ->
                 Pair(res, it.second)
             }
+
         }.map {
-            // Return the schema
             it.second
         }
     }
@@ -167,22 +212,32 @@ class FormService(
      * Get the default schema for the given form Id.
      * @param formId The Form Id
      */
-    fun getDefaultSchema(formId: UUID): Single<FormSchemaEntity> {
-        return formHazelcastRepository.find(formId).map {
-            if (it.defaultSchema != null) {
-                it.defaultSchema
+    fun getDefaultSchema(formId: UUID, tenant: UUID, subject: Subject? = null): Single<FormSchemaEntity> {
+        return getForm(formId, tenant, subject).map { fe ->
+            if (fe.defaultSchema != null) {
+                Pair(fe.defaultSchema, fe)
             } else {
                 throw IllegalArgumentException("Default Schema is not set for form $formId")
             }
-        }.flatMap { defaultSchemaUuid ->
-            formSchemaHazelcastRepository.find(defaultSchemaUuid)
+        }.flatMap {
+            //@TODO this could be optimized to prevent getSchema from recalling getForm
+            getSchema(it.first, tenant, subject)
         }
     }
 
-    fun getSchema(schemaId: UUID): Single<FormSchemaEntity> {
+    fun getSchema(schemaId: UUID, tenant: UUID, subject: Subject? = null): Single<FormSchemaEntity> {
         return formSchemaHazelcastRepository.find(schemaId)
                 .onErrorResumeNext {
                     Single.error(IllegalArgumentException("Cannot find schema id"))
+                }.flatMap { fse ->
+                    getForm(fse.formId, tenant, subject).map { fe ->
+                        Pair(fe, fse)
+                    }
+                }.map { (fe, fse) ->
+                    subject?.let {
+                        subject.checkPermission(WildcardPermission("form_schemas:read:${fe.owner}:${fe.tenant}"))
+                    }
+                    fse
                 }
     }
 
@@ -190,23 +245,27 @@ class FormService(
      * Get all schemas for the given form Id.
      * @param formId the Form Id that the Schemas belong to.
      */
-    fun getAllSchemas(formId: UUID, pageable: Pageable = Pageable.from(0)): Flowable<FormSchemaEntity> {
-        return formHazelcastRepository.exists(formId).map {
-            if (it) {
-                formId
-            } else {
-                throw IllegalArgumentException("Form $formId cannot be found.")
+    fun getAllSchemas(formId: UUID, tenant: UUID, subject: Subject? = null, pageable: Pageable = Pageable.from(0)): Flowable<FormSchemaEntity> {
+        return getForm(formId, tenant).map { fe ->
+            subject?.let {
+                subject.checkPermission(WildcardPermission("form_schemas:read:${fe.owner}:${fe.tenant}"))
             }
-        }.toFlowable().flatMap { uuid ->
-            formSchemaHazelcastRepository.getSchemasForForm(uuid, pageable)
+        }.flatMapPublisher {
+            formSchemaHazelcastRepository.getSchemasForForm(formId, pageable)
         }
     }
 
+    /**
+     * Used by Tasks and other internal systems for form submission validation.
+     * DOES NOT PROVIDE ANY PERMISSION CHECKS
+     * ONLY SHOULD BE USED FOR INTERNAL CALLS
+     * USE processFormSubmission() for Permission Checks and normal flow.
+     */
     fun validateFormSubmission(submission: FormSubmission): Single<Map<String, Any?>> {
         return formValidatorClient.validate(submission)
                 .onErrorResumeNext {
                     // @TODO Can eventually be replaced once micronaut-core fixes a issue where the response body is not passed to @Error handler when it catches the HttpClientResponseException
-                    //@TODO Review for cleanup
+                    // @TODO Review for cleanup
                     if (it is HttpClientResponseException) {
                         val body = it.response.getBody(ValidationResponseInvalid::class.java)
                         if (body.isPresent) {
@@ -222,35 +281,25 @@ class FormService(
                 }
     }
 
-        fun validationFormSubmissionAsTask(formSubmission: FormSubmission): Single<ValidationResponseValid> {
-            return formValidationService.validationFormSubmissionAsTask(formSubmission)
-        }
-
-//    fun validationFormSubmissionAsTask(formSubmission: FormSubmission): Single<ValidationResponseValid> {
-//        return taskManager.submit("form-submission-validator",
-//                FormSubmissionValidatorTask(formSubmission)).map {
-//            when (it) {
-//                is ValidationResponseValid -> {
-//                    log.ifDebugEnabled { "Got A Validation Success result: $it" }
-//                    it
-//
-//                }
-//                is ValidationResponseInvalid -> {
-//                    log.ifDebugEnabled { "Got A Validation Failure result: $it" }
-//                    throw FormValidationException(it)
-//
-//                }
-//                else -> {
-//                    throw IllegalStateException("Received a unknown Validation Response!!")
-//                }
-//            }
-//        }
+//    fun validationFormSubmissionAsTask(formOwner: UUID, formTenant: UUID, schemaId: UUID, subject: Subject? = null, formSubmission: FormSubmission): Single<ValidationResponseValid> {
+//        return formValidationService.validationFormSubmissionAsTask(formSubmission)
 //    }
+
 
     /**
      * Service for handling end-to-end form submission: Submission, Validation, Routing to Submission Handler, and response from submission handler
      */
-    fun processFormSubmission(formSubmission: FormSubmission): Single<FormSubmissionResponse> {
-        return submissionHandler.process(formSubmission)
+    fun processFormSubmission(schemaId: UUID, tenant: UUID, formSubmission: FormSubmission, dryRun: Boolean = false, subject: Subject? = null): Single<FormSubmissionResponse> {
+        // @TODO refactor to reduce amount of recalls to getSchema, getForm, etc, as Getting Schema also gets the Form.
+        return getSchema(schemaId, tenant, subject).flatMap { fse ->
+            getForm(fse.formId, tenant, subject).map { fe ->
+                Pair(fe, fse)
+            }
+        }.flatMap { (fe, fse) ->
+            subject?.let {
+                subject.checkPermission(WildcardPermission("form_schemas:validate:${fe.owner}:${fe.tenant}"))
+            }
+            submissionHandler.process(formSubmission, fe, fse, dryRun, subject)
+        }
     }
 }

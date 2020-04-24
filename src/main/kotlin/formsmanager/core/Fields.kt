@@ -1,6 +1,5 @@
-package formsmanager.domain
+package formsmanager.core
 
-import com.fasterxml.jackson.annotation.JsonProperty
 import java.time.Instant
 import java.util.*
 
@@ -22,15 +21,9 @@ interface ConfigField{
 }
 
 interface OwnerField{
-    val owner: String
+    val owner: UUID
 }
 
 interface EnabledField{
     val enabled: Boolean
 }
-
-enum class FormType{
-    @JsonProperty("formio")
-    FORMIO
-}
-

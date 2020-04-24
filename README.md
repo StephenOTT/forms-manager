@@ -43,6 +43,9 @@ Notes:
 1. If required to use confirmation authentication (to perform a sensitive action), then we do JWT + Password login on the endpoint.
 1. Shiro Annotations supported through Micronaut SecurityRule beans
 1. Issue with performance on Paging Predicate for Hazelcast: https://github.com/hazelcast/hazelcast/issues/10828.  A replacement of the Hazelcast query engine is supposed to be introduced for 4.1/4.2 that would "fix" this issue.  Timeline is ~Fall 2020.
+1. Users are owned by a Tenant.  A user can have access to many tenants (through permissions), but lives in only one tenant.
+1. A Administrative users or users who control multiple tenants will still have a "home tenant" to which they log in with (where they user exists), and then their permissions provide which tenants they can access.
+
 
 questions
 1. Member selection for distributed tasks: To only have specific nodes work on specific tasks.
@@ -57,6 +60,9 @@ todo:
 1. Add TTL for maps with configuration options to clear out/evict memory for seldom used objects. (Evict does not delete from the hazelcast mapstore, it only evicts from in-memory)
 1. Add local caching (with TTL) for WildcardPermissions that were generated from Strings in the User Entity
 1. Add updated to UserDetails (Micronaut security) for working with Subject from Shiro, so we can use the Micronaut Annotation support `@secured` and accessing the Shiro permission validator. 
+1. Eventually move to an ID Generator that is not built in UUID, as UUID is only 99.99 and could be collisions
+1. Add user registration limits for username and password: length, password complexity, etc
+1. Create a user Entity update page for Admin and for Regular users.
 
 Python execution service:
 

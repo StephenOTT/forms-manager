@@ -69,4 +69,15 @@ class ShiroAnnotationRuleValidator {
             }
         }
     }
+
+    /**
+     * Is Authenticated or is a Guest/Anonymous.
+     * For use with the RequiresAuthenticatedOrGuest annotation
+     */
+    fun checkRequiresAuthenticatedOrGuest(subject: Subject): Boolean {
+        log.ifDebugEnabled { "checkRequiresAuthenticatedOrGuest called." }
+        // Is Authenticated or is a Guest/Anonymous.
+        return (subject.isAuthenticated || !subject.isAuthenticated) && !subject.isRemembered
+    }
+
 }

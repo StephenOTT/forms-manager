@@ -1,5 +1,6 @@
 package formsmanager.users.controller
 
+import formsmanager.tenants.service.TenantService
 import formsmanager.users.domain.CompleteRegistrationRequest
 import formsmanager.users.domain.UserRegistration
 import formsmanager.users.domain.UserRegistrationResponse
@@ -9,33 +10,38 @@ import io.micronaut.http.HttpResponse
 import io.micronaut.http.annotation.*
 import io.reactivex.Single
 import org.apache.shiro.authz.annotation.RequiresGuest
+import org.apache.shiro.subject.Subject
 import java.util.*
 
 @Controller("/users/{tenant}")
-@RequiresGuest
 class UsersController(
-        private val userService: UserService
+        private val userService: UserService,
+        private val tenantService: TenantService
 ) {
 
     @Post("/register")
-    fun register(@QueryValue tenant: UUID, @Body registration: UserRegistration): Single<HttpResponse<UserRegistrationResponse>> {
-        return userService.userExists(registration.email, tenant).flatMap { exists ->
-            if (exists) {
-                Single.error(IllegalArgumentException("Email already exists."))
-            } else {
-                //@TODO create a Tenant Map Registery to validate that the Tenant Exists.
-                userService.createUser(registration.email, tenant)
-            }
-        }.map {
-            HttpResponse.created(
-                    UserRegistrationResponse("Pending email verification")
-            )
-        }
+    @RequiresGuest
+    fun register(subject: Subject, @QueryValue tenant: UUID, @Body registration: UserRegistration): Single<HttpResponse<UserRegistrationResponse>> {
+        return userService.createUser(registration.email, tenant, subject)
+                .map {
+                    HttpResponse.created(
+                            UserRegistrationResponse("Pending email verification")
+                    )
+                }
     }
 
     @Post("/register/complete")
-    fun completeRegistration(@Body body: CompleteRegistrationRequest): Single<HttpResponse<UserRegistrationResponse>>{
-        return userService.completeRegistration(body.id, body.email, body.emailConfirmToken, body.pwdResetToken, body.cleartextPassword) .map {
+    @RequiresGuest
+    fun completeRegistration(@QueryValue tenant: UUID, @Body body: CompleteRegistrationRequest): Single<HttpResponse<UserRegistrationResponse>> {
+        return userService.completeRegistration(
+                body.id,
+                body.email,
+                tenant,
+                body.emailConfirmToken,
+                body.pwdResetToken,
+                body.cleartextPassword
+
+        ).map {
             body.destroyPwd() //@TODO review if this is needed
             HttpResponse.created(UserRegistrationResponse("completed"))
         }
@@ -43,6 +49,7 @@ class UsersController(
 
     @Error
     fun formValidationError(request: HttpRequest<*>, exception: IllegalArgumentException): HttpResponse<UserRegistrationResponse> {
+        //@TODO refactor this with proper error message.
         return HttpResponse.created(
                 UserRegistrationResponse("Pending email verification")
         )
