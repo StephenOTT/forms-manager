@@ -2,8 +2,11 @@ package formsmanager.users.domain
 
 import formsmanager.core.TenantField
 import formsmanager.core.TimestampFields
-import formsmanager.hazelcast.map.CrudableObject
-import formsmanager.security.shiro.domain.Role
+import formsmanager.core.hazelcast.map.CrudableObject
+import formsmanager.core.hazelcast.map.MapKey
+import formsmanager.core.security.groups.domain.GroupEntity
+import formsmanager.core.security.shiro.domain.Role
+import formsmanager.users.UserMapKey
 import formsmanager.users.repository.UserEntityWrapper
 import io.swagger.v3.oas.annotations.media.Schema
 import java.time.Instant
@@ -12,7 +15,8 @@ import java.util.*
 @Schema
 data class UserEntity(
 
-        override val id: UUID = UUID.randomUUID(),
+        override val internalId: UUID = UUID.randomUUID(),
+
         override val ol: Long = 0,
 
         val emailInfo: EmailInfo,
@@ -20,6 +24,8 @@ data class UserEntity(
         val passwordInfo: PasswordInfo,
 
         val accountControlInfo: AccountControlInfo,
+
+        val groupInfo: GroupsInfo,
 
         val rolesInfo: RolesInfo,
 
@@ -29,35 +35,53 @@ data class UserEntity(
 
         override val updatedAt: Instant = createdAt
 
-): TimestampFields,
+) : TimestampFields,
         TenantField,
-        CrudableObject<UUID> {
+        CrudableObject {
 
     companion object {
 
         const val USER_ROLE: String = "USER_ROLE"
 
-        fun defaultUserRole(tenant: UUID, userId: UUID): Role{
+        fun defaultUserRole(tenant: UUID, userInternalId: UUID): Role {
             return Role(USER_ROLE, setOf(
-                    "users:read,edit:${tenant}:${userId}"
+                    "users:read,edit:${tenant}:${userInternalId}"
             ))
         }
 
-        fun newUser(email: String, tenant: UUID, userId: UUID = UUID.randomUUID()): UserEntity{
+        fun defaultUserGroup(tenant: UUID, roles: Set<Role>): GroupEntity {
+            return GroupEntity(
+                    name = "User Group",
+                    tenant = tenant,
+                    roles = roles
+            )
+        }
+
+        fun newUser(email: String, tenant: UUID, internalId: UUID = UUID.randomUUID()): UserEntity {
             return UserEntity(
-                    id = userId,
+                    internalId = internalId,
                     emailInfo = EmailInfo(email),
                     passwordInfo = PasswordInfo(resetPasswordInfo = ResetPasswordInfo()),
                     accountControlInfo = AccountControlInfo(),
                     tenant = tenant,
-                    rolesInfo = RolesInfo(setOf(defaultUserRole(tenant, userId)))
+                    rolesInfo = RolesInfo(setOf(defaultUserRole(tenant, internalId))),
+                    groupInfo = GroupsInfo(setOf(
+                            defaultUserGroup(tenant,
+                                    setOf(defaultUserRole(tenant, internalId))
+                            )
+                    ))
             )
         }
     }
 
     override fun toEntityWrapper(): UserEntityWrapper {
-        return UserEntityWrapper(id, this::class.qualifiedName!!, this)
+        return UserEntityWrapper(getMapKey(), this::class.qualifiedName!!, this)
     }
+
+    override fun getMapKey(): UserMapKey {
+        return UserMapKey(emailInfo.email, tenant)
+    }
+
 
     @Schema
     data class EmailInfo(
@@ -86,6 +110,10 @@ data class UserEntity(
             val locked: Boolean = false,
             val lockedAt: Instant? = null,
             val accountAccessFailCount: Int = 0
+    )
+
+    data class GroupsInfo(
+            val groups: Set<GroupEntity>
     )
 
     @Schema

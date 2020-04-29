@@ -3,7 +3,7 @@ package formsmanager.services.domain
 import java.util.*
 
 data class Service(
-        val id: UUID,
+        val internalId: UUID,
         val actionType: ActionType,
         val tags: Set<String>,
         val data: ServiceData,

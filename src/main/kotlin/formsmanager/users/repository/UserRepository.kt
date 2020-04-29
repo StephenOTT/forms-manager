@@ -2,17 +2,16 @@ package formsmanager.users.repository
 
 import com.hazelcast.core.HazelcastInstance
 import com.hazelcast.query.Predicates
-import formsmanager.hazelcast.annotation.MapStore
-import formsmanager.hazelcast.map.HazelcastCrudRepository
-import formsmanager.hazelcast.map.persistence.CrudableMapStoreRepository
-import formsmanager.hazelcast.map.persistence.CurdableMapStore
-import formsmanager.hazelcast.map.persistence.MapStoreItemWrapperEntity
+import formsmanager.core.hazelcast.annotation.MapStore
+import formsmanager.core.hazelcast.map.HazelcastCrudRepository
+import formsmanager.core.hazelcast.map.persistence.CrudableMapStoreRepository
+import formsmanager.core.hazelcast.map.persistence.CurdableMapStore
+import formsmanager.core.hazelcast.map.persistence.MapStoreItemWrapperEntity
+import formsmanager.users.UserMapKey
 import formsmanager.users.domain.UserEntity
 import io.micronaut.data.jdbc.annotation.JdbcRepository
 import io.micronaut.data.model.query.builder.sql.Dialect
-import io.reactivex.Maybe
 import io.reactivex.Single
-import java.lang.IllegalArgumentException
 import java.util.*
 import javax.inject.Singleton
 import javax.persistence.Entity
@@ -21,9 +20,9 @@ import javax.persistence.Entity
  * Entity for storage in a IMDG MapStore for User Entity
  */
 @Entity
-class UserEntityWrapper(key: UUID,
+class UserEntityWrapper(key: UserMapKey,
                         classId: String,
-                        value: UserEntity) : MapStoreItemWrapperEntity<UserEntity>(key, classId, value)
+                        value: UserEntity) : MapStoreItemWrapperEntity<UserEntity>(key.toUUID(), classId, value)
 
 /**
  * JDBC Repository for use by the Users MapStore
@@ -45,7 +44,7 @@ class UsersMapStore(mapStoreRepository: UsersMapStoreRepository) :
 @MapStore(UsersMapStore::class, UsersHazelcastRepository.MAP_NAME)
 class UsersHazelcastRepository(
         hazelcastInstance: HazelcastInstance) :
-        HazelcastCrudRepository<UUID, UserEntity>(
+        HazelcastCrudRepository<UserEntity>(
                 hazelcastInstance = hazelcastInstance,
                 mapName = MAP_NAME
         ) {
@@ -56,31 +55,18 @@ class UsersHazelcastRepository(
 
     //@TODO add index for email address
 
-    fun userExists(email: String, tenant: UUID): Single<Boolean> {
-        //@TODO Create a Map Index for Email and Tenant
-        return Single.fromCallable {
-            mapService.values(Predicates.and(
-                    Predicates.equal<String, UUID>("emailInfo.email", email),
-                    Predicates.equal<String, UUID>("tenant", tenant))
-            ).size == 1
-        }
-    }
-
-    fun findByEmail(email: String, tenant: UUID): Single<UserEntity> {
-        //@TODO Create a Map Index for Email and Tenant
-        return Single.fromCallable {
-            mapService.values(Predicates.and(
-                    Predicates.equal<String, UUID>("emailInfo.email", email),
-                    Predicates.equal<String, UUID>("tenant", tenant))
-            ).single()
-        }
-    }
-
-    /**
-     * Eval if the user account is active.  Active is a aggregate of multiple account rules.
-     */
-    fun isActive(userId: UUID): Single<Boolean> {
-        return find(userId).map {
+//    fun userExists(email: String, tenant: UUID): Single<Boolean> {
+//        //@TODO Create a Map Index for Email and Tenant
+//        return Single.fromCallable {
+//            mapService.values(Predicates.and(
+//                    Predicates.equal<String, UUID>("emailInfo.email", email),
+//                    Predicates.equal<String, UUID>("tenant", tenant))
+//            ).size == 1
+//        }
+//    }
+//
+    fun isActive(userMapKey: UUID): Single<Boolean> {
+        return get(userMapKey).map {
             it.accountActive()
         }
     }

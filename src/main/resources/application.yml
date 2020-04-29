@@ -57,3 +57,30 @@ datasources:
 formValidator:
   client:
     host: http://localhost:8085
+
+myapp:
+  security:
+    roles:
+      - id: c0e15b1a-670f-4846-9721-1a5836c9acf3
+        name: ADMIN_ROLE
+        permissions:
+          - "tenants:*"
+          - "users:*"
+          - "groups:*"
+          - "roles:*"
+          - "forms:*"
+          - "services:*"
+          - "businessunits:*"
+
+    groups:
+      - id: 41dfaf60-aa99-405d-9dcb-2c7a4932247c
+        name: Admin_Group
+        roles:
+          - c0e15b1a-670f-4846-9721-1a5836c9acf3 # ADMIN_ROLE
+
+    users:
+      - id: a163794e-9bf9-461a-bd37-8b9a67d1cefb
+        email: 1@1.com
+        password: 1234567890
+        groups:
+          - 41dfaf60-aa99-405d-9dcb-2c7a4932247c # Admin Group

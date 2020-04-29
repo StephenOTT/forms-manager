@@ -45,7 +45,10 @@ Notes:
 1. Issue with performance on Paging Predicate for Hazelcast: https://github.com/hazelcast/hazelcast/issues/10828.  A replacement of the Hazelcast query engine is supposed to be introduced for 4.1/4.2 that would "fix" this issue.  Timeline is ~Fall 2020.
 1. Users are owned by a Tenant.  A user can have access to many tenants (through permissions), but lives in only one tenant.
 1. A Administrative users or users who control multiple tenants will still have a "home tenant" to which they log in with (where they user exists), and then their permissions provide which tenants they can access.
+1. Distributed Query for Hazelcast only works with items that are in Mem (obviously ;) ).  So If items are evicted from the mem based on TTL, then query will not find them.  Items that require search need to be findable based ID.  Use a object as ID that is a makeup of known values for that item.
 
+1. MapKeys are based on a combination of multiple values in a Entity that make up the unique text.  That text is this turned into a UUID **v3**
+1. 
 
 questions
 1. Member selection for distributed tasks: To only have specific nodes work on specific tasks.
@@ -64,7 +67,7 @@ todo:
 1. Add user registration limits for username and password: length, password complexity, etc
 1. Create a user Entity update page for Admin and for Regular users.
 1. ** deal with scenarios of who owns tenants and groups: and how someone can assign the owner of an object: (Likely a permission)** 
-
+1. ** convert UUID key for users into a Object that is Email + Tenant.  Id field in object will remain as its still needed for unique ID that is unchangable   
 
 Python execution service:
 

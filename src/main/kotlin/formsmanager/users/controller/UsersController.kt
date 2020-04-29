@@ -1,6 +1,7 @@
 package formsmanager.users.controller
 
 import formsmanager.tenants.service.TenantService
+import formsmanager.users.UserMapKey
 import formsmanager.users.domain.CompleteRegistrationRequest
 import formsmanager.users.domain.UserRegistration
 import formsmanager.users.domain.UserRegistrationResponse
@@ -33,10 +34,11 @@ class UsersController(
     @Post("/register/complete")
     @RequiresGuest
     fun completeRegistration(@QueryValue tenant: UUID, @Body body: CompleteRegistrationRequest): Single<HttpResponse<UserRegistrationResponse>> {
+
+        val mapKey = UserMapKey(body.email, tenant)
+
         return userService.completeRegistration(
-                body.id,
-                body.email,
-                tenant,
+                mapKey,
                 body.emailConfirmToken,
                 body.pwdResetToken,
                 body.cleartextPassword

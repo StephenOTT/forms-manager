@@ -1,11 +1,12 @@
 package formsmanager.tenants.repository
 
 import com.hazelcast.core.HazelcastInstance
-import formsmanager.hazelcast.annotation.MapStore
-import formsmanager.hazelcast.map.persistence.CrudableMapStoreRepository
-import formsmanager.hazelcast.map.persistence.CurdableMapStore
-import formsmanager.hazelcast.map.HazelcastCrudRepository
-import formsmanager.hazelcast.map.persistence.MapStoreItemWrapperEntity
+import formsmanager.core.hazelcast.annotation.MapStore
+import formsmanager.core.hazelcast.map.persistence.CrudableMapStoreRepository
+import formsmanager.core.hazelcast.map.persistence.CurdableMapStore
+import formsmanager.core.hazelcast.map.HazelcastCrudRepository
+import formsmanager.core.hazelcast.map.persistence.MapStoreItemWrapperEntity
+import formsmanager.tenants.TenantMapKey
 import formsmanager.tenants.domain.TenantEntity
 import io.micronaut.data.jdbc.annotation.JdbcRepository
 import io.micronaut.data.model.query.builder.sql.Dialect
@@ -17,9 +18,9 @@ import javax.persistence.Entity
  * Entity for storage in a IMDG MapStore for TenantEntity
  */
 @Entity
-class TenantEntityWrapper(key: UUID,
-                        classId: String,
-                        value: TenantEntity) : MapStoreItemWrapperEntity<TenantEntity>(key, classId, value)
+class TenantEntityWrapper(key: TenantMapKey,
+                          classId: String,
+                          value: TenantEntity) : MapStoreItemWrapperEntity<TenantEntity>(key.toUUID(), classId, value)
 
 /**
  * JDBC Repository for use by the Tenants MapStore
@@ -41,12 +42,12 @@ class TenantsMapStore(mapStoreRepository: TenantsMapStoreRepository) :
 @MapStore(TenantsMapStore::class, TenantHazelcastRepository.MAP_NAME)
 class TenantHazelcastRepository(
         hazelcastInstance: HazelcastInstance) :
-        HazelcastCrudRepository<UUID, TenantEntity>(
+        HazelcastCrudRepository<TenantEntity>(
                 hazelcastInstance = hazelcastInstance,
                 mapName = MAP_NAME
         ) {
 
-        companion object{
-                const val MAP_NAME = "tenants"
-        }
+    companion object {
+        const val MAP_NAME = "tenants"
+    }
 }

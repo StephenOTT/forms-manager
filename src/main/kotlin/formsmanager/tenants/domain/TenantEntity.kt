@@ -1,7 +1,8 @@
 package formsmanager.tenants.domain
 
 import formsmanager.core.*
-import formsmanager.hazelcast.map.CrudableObject
+import formsmanager.core.hazelcast.map.CrudableObject
+import formsmanager.tenants.TenantMapKey
 import formsmanager.tenants.repository.TenantEntityWrapper
 import io.swagger.v3.oas.annotations.media.Schema
 import java.time.Instant
@@ -10,7 +11,7 @@ import java.util.*
 @Schema
 data class TenantEntity(
 
-        override val id: UUID = UUID.randomUUID(),
+        override val internalId: UUID = UUID.randomUUID(),
 
         override val ol: Long = 0,
 
@@ -24,19 +25,19 @@ data class TenantEntity(
 
         override val data: Map<String, Any?> = mapOf(),
 
-        override val config: Map<String, Any?> = mapOf(),
+        override val config: Map<String, Any?> = mapOf()
 
-        override val owner: UUID,
-
-        override val enabled: Boolean = true
 ): TimestampFields,
         DataField,
         ConfigField,
-        OwnerField,
-        EnabledField,
-        CrudableObject<UUID> {
+        CrudableObject {
+
     override fun toEntityWrapper(): TenantEntityWrapper {
-        return TenantEntityWrapper(id, this::class.qualifiedName!!, this)
+        return TenantEntityWrapper(getMapKey(), this::class.qualifiedName!!, this)
+    }
+
+    override fun getMapKey(): TenantMapKey {
+        return TenantMapKey(name)
     }
 }
 
@@ -48,30 +49,41 @@ data class TenantEntityCreator(
 
         var description: String? = null,
 
-        var defaultSchema: UUID? = null,
-
         val data: Map<String, Any?> = mapOf(),
 
-        val config: Map<String, Any?> = mapOf(),
-
-        val owner: UUID,
-
-        val enabled: Boolean = true
+        val config: Map<String, Any?> = mapOf()
 ){
-    /**
-     * Convert to TenantEntity.
-     * Id is a parameter to allow Creators to be used for existing entities (such as when doing a Update)
-     */
-    fun toTenantEntity(id: UUID): TenantEntity{
+
+    fun toTenantEntity(): TenantEntity{
         return TenantEntity(
-                id = id,
                 ol = ol,
                 name = name,
                 description = description,
                 data = data,
-                config = config,
-                owner = owner,
-                enabled = enabled
+                config = config
+        )
+    }
+}
+
+@Schema
+data class TenantEntityModifier(
+        var ol: Long = 0,
+
+        var description: String? = null,
+
+        val data: Map<String, Any?> = mapOf(),
+
+        val config: Map<String, Any?> = mapOf()
+){
+
+    fun toTenantEntity(name: String, internalId: UUID): TenantEntity{
+        return TenantEntity(
+                internalId = internalId,
+                ol = ol,
+                name = name,
+                description = description,
+                data = data,
+                config = config
         )
     }
 }

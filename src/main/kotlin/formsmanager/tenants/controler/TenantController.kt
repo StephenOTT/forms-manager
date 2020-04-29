@@ -1,8 +1,10 @@
 package formsmanager.tenants.controler
 
-import formsmanager.exception.NotFoundException
+import formsmanager.core.exception.NotFoundException
+import formsmanager.tenants.TenantMapKey
 import formsmanager.tenants.domain.TenantEntity
 import formsmanager.tenants.domain.TenantEntityCreator
+import formsmanager.tenants.domain.TenantEntityModifier
 import formsmanager.tenants.service.TenantService
 import io.micronaut.http.HttpRequest
 import io.micronaut.http.HttpResponse
@@ -29,13 +31,13 @@ class TenantController(
 
     /**
      * Get a tenant.
-     * @param uuid the Id of the tenant.
+     * @param tenantName the name of the tenant.
      * @return The tenant.
      * @exception NotFoundException Could not find tenant based on Id.
      */
-    @Get("/{uuid}")
-    fun getTenant(subject: Subject, @QueryValue uuid: UUID): Single<HttpResponse<TenantEntity>> {
-        return tenantService.getTenant(uuid, subject)
+    @Get("/{tenantName}")
+    fun getTenant(subject: Subject, @QueryValue tenantName: String): Single<HttpResponse<TenantEntity>> {
+        return tenantService.getTenant(TenantMapKey(tenantName), subject)
                 .map {
                     HttpResponse.ok(it)
                 }
@@ -48,12 +50,10 @@ class TenantController(
      */
     @Post("/")
     fun createTenant(subject: Subject, @Body tenant: TenantEntityCreator): Single<HttpResponse<TenantEntity>> {
-        return tenantService.createTenant(
-                tenant.toTenantEntity(UUID.randomUUID()),
-                subject
-        ).map {
-            HttpResponse.ok(it)
-        }
+        return tenantService.createTenant(tenant.toTenantEntity(), subject)
+                .map {
+                    HttpResponse.ok(it)
+                }
     }
 
     /**
@@ -62,10 +62,12 @@ class TenantController(
      * @param tenant The updated Tenant.
      * @return The Tenant
      */
-    @Patch("/{uuid}")
-    fun updateTenant(subject: Subject, @QueryValue uuid: UUID, @Body tenant: TenantEntityCreator): Single<HttpResponse<TenantEntity>> {
-        return tenantService.updateTenant(tenant.toTenantEntity(uuid), subject)
-                .map {
+    @Patch("/{tenantName}")
+    fun updateTenant(subject: Subject, @QueryValue tenantName: String, @Body tenant: TenantEntityModifier): Single<HttpResponse<TenantEntity>> {
+        return tenantService.getTenant(TenantMapKey(tenantName))
+                .flatMap { te ->
+                    tenantService.updateTenant(tenant.toTenantEntity(te.name, te.internalId))
+                }.map {
                     HttpResponse.ok(it)
                 }
     }

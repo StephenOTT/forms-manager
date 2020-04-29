@@ -1,12 +1,13 @@
 package formsmanager.tenants.service
 
+import formsmanager.core.security.checkAuthorization
+import formsmanager.tenants.TenantMapKey
 import formsmanager.tenants.domain.TenantEntity
 import formsmanager.tenants.repository.TenantHazelcastRepository
 import io.reactivex.Single
 import org.apache.shiro.authz.permission.WildcardPermission
 import org.apache.shiro.subject.Subject
 import org.slf4j.LoggerFactory
-import java.lang.IllegalArgumentException
 import java.time.Instant
 import java.util.*
 import javax.inject.Singleton
@@ -14,7 +15,7 @@ import javax.inject.Singleton
 
 @Singleton
 class TenantService(
-    private val tenantHazelcastRepository: TenantHazelcastRepository
+        private val tenantHazelcastRepository: TenantHazelcastRepository
 ) {
 
     companion object {
@@ -27,60 +28,67 @@ class TenantService(
      * @param subject optional Shiro Subject.  If Subject is provided, then security validation will occur.
      */
     fun createTenant(tenantEntity: TenantEntity, subject: Subject? = null): Single<TenantEntity> {
-        return Single.fromCallable {
-            subject?.let {
-                subject.checkPermission(WildcardPermission("tenants:create"))
-            }
-        }.flatMap {
-            tenantHazelcastRepository.create(tenantEntity)
-        }
+        return subject.checkAuthorization("tenants:create")
+                .flatMap {
+                    tenantHazelcastRepository.create(tenantEntity)
+                }
     }
 
     /**
      * Get/find a Tenant
      * @param tenantId Tenant ID
      */
-    fun getTenant(tenantId: UUID, subject: Subject? = null): Single<TenantEntity> {
-        return tenantHazelcastRepository.find(tenantId).map { fe ->
+    fun getTenant(tenantMapKey: TenantMapKey, subject: Subject? = null): Single<TenantEntity> {
+        return tenantHazelcastRepository.get(tenantMapKey.toUUID()).map { te ->
             subject?.let {
-                subject.checkPermission(WildcardPermission("tenants:read:${fe.owner}"))
+                subject.checkPermission(WildcardPermission("tenants:read:${te.internalId}"))
             }
-
-            fe
+            te
         }
     }
 
-    fun tenantExists(tenantId: UUID, subject: Subject? = null, mustExist: Boolean = false): Single<Boolean> {
-        subject?.let {
-            subject.checkPermission(WildcardPermission("tenants:read:${tenantId}"))
-        }
-        return tenantHazelcastRepository.exists(tenantId).map {
-            if (mustExist){
-                throw IllegalArgumentException("Tenant $tenantId cannot be found")
+    /**
+     * Checks if tenant exists.
+     * Optional mustExist parameter that will throw a IllegalArgumentException if the tenant does not exist.
+     * @exception IllegalArgumentException if mustExist is set to true, and the request tenant does not exist
+     */
+    fun tenantExists(tenantMapKey: TenantMapKey, mustExist: Boolean = false): Single<Boolean> {
+        return tenantExists(tenantMapKey.toUUID(), mustExist)
+    }
+
+    fun tenantExists(tenantName: String, mustExist: Boolean = false): Single<Boolean> {
+        return tenantExists(TenantMapKey(tenantName), mustExist)
+    }
+
+    fun tenantExists(tenantMapKey: UUID, mustExist: Boolean = false): Single<Boolean> {
+        return tenantHazelcastRepository.exists(tenantMapKey).map {
+            if (mustExist) {
+                require(it, lazyMessage = { "Tenant does not exist" })
             }
             it
         }
     }
+
 
     /**
      * Update/overwrite tenant
      * @param tenantEntity Tenant to be updated/overwritten
      */
     fun updateTenant(tenantEntity: TenantEntity, subject: Subject? = null): Single<TenantEntity> {
-        return getTenant(tenantEntity.id).map { fe ->
+        return tenantHazelcastRepository.update(tenantEntity) { originalItem, newItem ->
+            //Update logic for automated fields @TODO consider automation with annotations
+
             subject?.let {
-                subject.checkPermission(WildcardPermission("tenants:update:${fe.owner}"))
+                // @TODO review if this should be a perm based on the tenantID.
+                subject.checkPermission(WildcardPermission("tenants:update:${originalItem.internalId}"))
             }
-        }.flatMap {
-            tenantHazelcastRepository.update(tenantEntity) { originalItem, newItem ->
-                //Update logic for automated fields @TODO consider automation with annotations
-                newItem.copy(
-                        ol = originalItem.ol + 1,
-                        id = originalItem.id,
-                        createdAt = originalItem.createdAt,
-                        updatedAt = Instant.now()
-                )
-            }
+
+            newItem.copy(
+                    ol = originalItem.ol + 1,
+                    internalId = originalItem.internalId,
+                    createdAt = originalItem.createdAt,
+                    updatedAt = Instant.now()
+            )
         }
     }
 }

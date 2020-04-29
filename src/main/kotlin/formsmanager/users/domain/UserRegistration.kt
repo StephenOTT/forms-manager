@@ -1,7 +1,6 @@
 package formsmanager.users.domain
 
 import com.fasterxml.jackson.annotation.JsonProperty
-import io.micronaut.http.annotation.QueryValue
 import java.util.*
 
 data class UserRegistration(
@@ -13,8 +12,6 @@ data class UserRegistrationResponse(
 )
 
 data class CompleteRegistrationRequest(
-        val id: UUID,
-
         val email: String,
 
         @JsonProperty("token1")
@@ -23,7 +20,7 @@ data class CompleteRegistrationRequest(
         @JsonProperty("token2")
         val pwdResetToken: UUID,
 
-        @JsonProperty("pwd")
+        @JsonProperty("password")
         var cleartextPassword: CharArray
 ) {
 
@@ -39,7 +36,6 @@ data class CompleteRegistrationRequest(
 
         other as CompleteRegistrationRequest
 
-        if (id != other.id) return false
         if (email != other.email) return false
         if (emailConfirmToken != other.emailConfirmToken) return false
         if (pwdResetToken != other.pwdResetToken) return false
@@ -49,11 +45,12 @@ data class CompleteRegistrationRequest(
     }
 
     override fun hashCode(): Int {
-        var result = id.hashCode()
-        result = 31 * result + email.hashCode()
+        var result = email.hashCode()
         result = 31 * result + emailConfirmToken.hashCode()
         result = 31 * result + pwdResetToken.hashCode()
         result = 31 * result + cleartextPassword.contentHashCode()
         return result
     }
+
+
 }
