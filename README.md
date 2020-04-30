@@ -192,3 +192,35 @@ Factory
 Service
 System
 Handler
+
+
+
+# Permissions
+
+## Roles
+
+"roles:create:${entity.tenant}"
+"roles:read:${g.tenant}"
+"roles:update:${originalItem.tenant}"
+
+"groups:create:${groupEntity.tenant}"
+"groups:read:${g.tenant}"
+"groups:update:${originalItem.tenant}"
+
+"users:read:${ue.tenant}:${ue.internalId}"
+"users:update:${userEntity.tenant}:${userEntity.internalId}"
+
+"tenants:create"
+"tenants:read:${te.internalId}"
+"tenants:update:${originalItem.internalId}"
+
+"forms:create:${formEntity.owner}:${formEntity.tenant}"
+"forms:read:${fe.owner}:${fe.tenant}"
+"forms:update:${originalItem.owner}:${originalItem.tenant}"
+"forms:update:${fe.owner}:${fe.tenant}"
+"form_schemas:update:${fe.owner}:${fe.tenant}"
+"forms:update:${fe.owner}:${fe.tenant}"
+"form_schemas:create:${fe.owner}:${fe.tenant}"
+"form_schemas:read:${fe.owner}:${fe.tenant}"
+"form_schemas:read:${fe.owner}:${fe.tenant}"
+"form_schemas:validate:${fe.owner}:${fe.tenant}"
