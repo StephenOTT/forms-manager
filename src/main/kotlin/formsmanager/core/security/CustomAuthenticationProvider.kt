@@ -1,6 +1,7 @@
 package formsmanager.core.security
 
 import formsmanager.ifDebugEnabled
+import formsmanager.users.UserMapKey
 import formsmanager.users.service.UserService
 import io.micronaut.http.HttpRequest
 import io.micronaut.security.authentication.*
@@ -52,7 +53,7 @@ class CustomAuthenticationProvider(
         val email = identity.substringAfter(":", "")
         val tenant = UUID.fromString(identity.substringBefore(":", ""))
 
-        return userService.getUser(email, tenant)
+        return userService.getUser(UserMapKey(email, tenant))
                 .onErrorResumeNext {
                     // @TODO review
                     // Could not find the email in users

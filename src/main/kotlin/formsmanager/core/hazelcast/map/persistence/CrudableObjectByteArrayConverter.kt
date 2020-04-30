@@ -16,9 +16,9 @@ import javax.inject.Singleton
 @Singleton
 class CrudableObjectByteArrayConverter(
         private val mapper: ObjectMapper
-) : TypeConverter<CrudableObject<*>, ByteArray> {
+) : TypeConverter<CrudableObject, ByteArray> {
 
-    override fun convert(`object`: CrudableObject<*>, targetType: Class<ByteArray>, context: ConversionContext): Optional<ByteArray> {
+    override fun convert(`object`: CrudableObject, targetType: Class<ByteArray>, context: ConversionContext): Optional<ByteArray> {
         return Optional.of(mapper.writeValueAsBytes(`object`))
     }
 }

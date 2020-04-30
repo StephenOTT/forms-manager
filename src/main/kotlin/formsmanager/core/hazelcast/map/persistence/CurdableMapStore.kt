@@ -12,7 +12,7 @@ import java.util.stream.StreamSupport
  * Abstract class used to for creating a MapStore for crud operations with
  * a persistence repositories such as JdbcRepository.
  */
-abstract class CurdableMapStore<E: CrudableObject<UUID>, W: MapStoreItemWrapperEntity<E>, R: CrudableMapStoreRepository<W>>(
+abstract class CurdableMapStore<E: CrudableObject, W: MapStoreItemWrapperEntity<E>, R: CrudableMapStoreRepository<W>>(
         private val mapStoreRepository: R
 ) : MapStore<UUID, E> {
 
@@ -43,7 +43,9 @@ abstract class CurdableMapStore<E: CrudableObject<UUID>, W: MapStoreItemWrapperE
     override fun loadAll(keys: MutableCollection<UUID>?): MutableMap<UUID, E> {
         log.ifDebugEnabled { "loadAll() called for ${this::class.qualifiedName}" }
         return StreamSupport.stream(mapStoreRepository.findAll().spliterator(), true)
-                .map { it.value }.collect(Collectors.toMap({ it.id }, { it }))
+                .map {
+                    it.value
+                }.collect(Collectors.toMap({ it.getMapKey().toUUID() }, { it }))
     }
 
     override fun deleteAll(keys: MutableCollection<UUID>) {
