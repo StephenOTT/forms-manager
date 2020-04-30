@@ -2,6 +2,7 @@ package formsmanager.core.security.shiro.realm
 
 import formsmanager.core.security.shiro.jwt.JwtAuthenticationInfo
 import formsmanager.core.security.shiro.jwt.JwtToken
+import formsmanager.users.UserMapKey
 import formsmanager.users.service.UserService
 import io.reactivex.schedulers.Schedulers
 import org.apache.shiro.authc.AuthenticationInfo
@@ -38,7 +39,7 @@ class JwtAuthenticationRealm(
             val tenant = UUID.fromString(token.principal.substringBefore(":", ""))
 
             return kotlin.runCatching {
-                userService.getUser(email, tenant).map {
+                userService.getUser(UserMapKey(email, tenant)).map {
                     if (it.accountActive()){
                         JwtAuthenticationInfo(token)
                     } else {

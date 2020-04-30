@@ -66,7 +66,7 @@ data class RoleEntityCreator(
      * Convert to GroupEntity.
      * Id is a parameter to allow Creators to be used for existing entities (such as when doing a Update)
      */
-    fun toRoleEntity(internalId: UUID, tenant: UUID): RoleEntity{
+    fun toRoleEntity(internalId: UUID = UUID.randomUUID(), tenant: UUID): RoleEntity{
         return RoleEntity(
                 internalId = internalId,
                 ol = ol,

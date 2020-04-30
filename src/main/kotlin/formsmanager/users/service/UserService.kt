@@ -64,7 +64,7 @@ class UserService(
             // Dynamic Permission, where the user MUST have access to their specific user ID.
             // Means that ever user will require a permission to access their account.
             subject?.let {
-                subject.checkPermission(WildcardPermission("users:read:${ue.tenant}:${ue.internalId}"))
+                subject.checkPermission("users:read:${ue.tenant}:${ue.internalId}")
             }
             ue
         }
@@ -97,7 +97,7 @@ class UserService(
     fun updateUser(userEntity: UserEntity, subject: Subject? = null): Single<UserEntity> {
         return userRepository.update(userEntity) { originalItem, newItem ->
             subject?.let {
-                subject.checkPermission(WildcardPermission("users:update:${userEntity.tenant}:${userEntity.internalId}"))
+                subject.checkPermission("users:update:${userEntity.tenant}:${userEntity.internalId}")
             }
 
             //Update logic for automated fields @TODO consider automation with annotations

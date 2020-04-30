@@ -41,7 +41,7 @@ class TenantService(
     fun getTenant(tenantMapKey: TenantMapKey, subject: Subject? = null): Single<TenantEntity> {
         return tenantHazelcastRepository.get(tenantMapKey.toUUID()).map { te ->
             subject?.let {
-                subject.checkPermission(WildcardPermission("tenants:read:${te.internalId}"))
+                subject.checkPermission("tenants:read:${te.internalId}")
             }
             te
         }
@@ -80,7 +80,7 @@ class TenantService(
 
             subject?.let {
                 // @TODO review if this should be a perm based on the tenantID.
-                subject.checkPermission(WildcardPermission("tenants:update:${originalItem.internalId}"))
+                subject.checkPermission("tenants:update:${originalItem.internalId}")
             }
 
             newItem.copy(

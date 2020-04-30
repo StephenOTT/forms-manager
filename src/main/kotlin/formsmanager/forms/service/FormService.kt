@@ -50,7 +50,7 @@ class FormService(
     fun createForm(formEntity: FormEntity, subject: Subject? = null): Single<FormEntity> {
         return tenantService.tenantExists(formEntity.tenant, true).map {
             subject?.let {
-                subject.checkPermission(WildcardPermission("forms:create:${formEntity.owner}:${formEntity.tenant}"))
+                subject.checkPermission("forms:create:${formEntity.owner}:${formEntity.tenant}")
             }
         }.flatMap {
             formHazelcastRepository.create(formEntity)
@@ -68,7 +68,7 @@ class FormService(
     fun getForm(formMapKey: UUID, subject: Subject? = null): Single<FormEntity> {
         return formHazelcastRepository.get(formMapKey).map { fe ->
             subject?.let {
-                subject.checkPermission(WildcardPermission("forms:read:${fe.owner}:${fe.tenant}"))
+                subject.checkPermission("forms:read:${fe.owner}:${fe.tenant}")
             }
 
             fe
@@ -108,7 +108,7 @@ class FormService(
     fun updateForm(formEntity: FormEntity, subject: Subject? = null): Single<FormEntity> {
         return formHazelcastRepository.update(formEntity) { originalItem, newItem ->
             subject?.let {
-                subject.checkPermission(WildcardPermission("forms:update:${originalItem.owner}:${originalItem.tenant}"))
+                subject.checkPermission("forms:update:${originalItem.owner}:${originalItem.tenant}")
             }
 
             //Update logic for automated fields @TODO consider automation with annotations
@@ -132,14 +132,14 @@ class FormService(
                 // Check if they are allowed to update the Form with the Default key.
                 // They have the permission to update the Schema, but not the permission to make it the default form.
                 subject?.let {
-                    subject.checkPermission(WildcardPermission("forms:update:${fe.owner}:${fe.tenant}"))
+                    subject.checkPermission("forms:update:${fe.owner}:${fe.tenant}")
                 }
             }
             fe
         }.flatMap { fe ->
 
             subject?.let {
-                subject.checkPermission(WildcardPermission("form_schemas:update:${fe.owner}:${fe.tenant}"))
+                subject.checkPermission("form_schemas:update:${fe.owner}:${fe.tenant}")
             }
 
             formSchemaHazelcastRepository.update(schemaEntity) { originalItem, newItem ->
@@ -186,14 +186,14 @@ class FormService(
                 // Check if they are allowed to update the Form with the Default key.
                 // They have the permission to update the Schema, but not the permission to make it the default form.
                 subject?.let {
-                    subject.checkPermission(WildcardPermission("forms:update:${fe.owner}:${fe.tenant}"))
+                    subject.checkPermission("forms:update:${fe.owner}:${fe.tenant}")
                 }
             }
             fe
         }.flatMap { fe ->
 
             subject?.let {
-                subject.checkPermission(WildcardPermission("form_schemas:create:${fe.owner}:${fe.tenant}"))
+                subject.checkPermission("form_schemas:create:${fe.owner}:${fe.tenant}")
             }
 
             // Create the form schema
@@ -250,7 +250,7 @@ class FormService(
                     }
                 }.map { (fe, fse) ->
                     subject?.let {
-                        subject.checkPermission(WildcardPermission("form_schemas:read:${fe.owner}:${fe.tenant}"))
+                        subject.checkPermission("form_schemas:read:${fe.owner}:${fe.tenant}")
                     }
                     fse
                 }
@@ -263,7 +263,7 @@ class FormService(
     fun getAllSchemas(formMapKey: UUID, subject: Subject? = null, pageable: Pageable = Pageable.from(0)): Flowable<FormSchemaEntity> {
         return getForm(formMapKey).map { fe ->
             subject?.let {
-                subject.checkPermission(WildcardPermission("form_schemas:read:${fe.owner}:${fe.tenant}"))
+                subject.checkPermission("form_schemas:read:${fe.owner}:${fe.tenant}")
             }
         }.flatMapPublisher {
             formSchemaHazelcastRepository.getSchemasForForm(formMapKey, pageable)
@@ -313,7 +313,7 @@ class FormService(
             }
         }.flatMap { (fe, fse) ->
             subject?.let {
-                subject.checkPermission(WildcardPermission("form_schemas:validate:${fe.owner}:${fe.tenant}"))
+                subject.checkPermission("form_schemas:validate:${fe.owner}:${fe.tenant}")
             }
             submissionHandler.process(formSubmission, fe, fse, dryRun, subject)
         }

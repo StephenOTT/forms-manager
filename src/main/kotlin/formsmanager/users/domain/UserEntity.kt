@@ -113,7 +113,7 @@ data class UserEntity(
     )
 
     data class GroupsInfo(
-            val groups: Set<GroupEntity>
+            val groups: Set<GroupEntity> = setOf()
     )
 
     @Schema

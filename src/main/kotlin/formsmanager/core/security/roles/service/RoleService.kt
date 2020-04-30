@@ -29,10 +29,10 @@ class RoleService(
      * @param entity Role to be created/inserted
      * @param subject optional Shiro Subject.  If Subject is provided, then security validation will occur.
      */
-    fun createRole(entity: RoleEntity, subject: Subject? = null): Single<RoleEntity> {
+    fun create(entity: RoleEntity, subject: Subject? = null): Single<RoleEntity> {
         return Single.fromCallable {
             subject?.let {
-                subject.checkPermission(WildcardPermission("roles:create:${entity.tenant}"))
+                subject.checkPermission("roles:create:${entity.tenant}")
             }
         }.flatMap {
             roleHazelcastRepository.create(entity)
@@ -43,10 +43,10 @@ class RoleService(
      * Get/find a Role
      * @param id Role ID
      */
-    fun getRole(roleMapKey: RoleMapKey, subject: Subject? = null): Single<RoleEntity> {
+    fun get(roleMapKey: RoleMapKey, subject: Subject? = null): Single<RoleEntity> {
         return roleHazelcastRepository.get(roleMapKey.toUUID()).map { g ->
             subject?.let {
-                subject.checkPermission(WildcardPermission("roles:read:${g.tenant}"))
+                subject.checkPermission("roles:read:${g.tenant}")
             }
             g
         }
@@ -60,10 +60,10 @@ class RoleService(
      * Update/overwrite Role
      * @param entity Role to be updated/overwritten
      */
-    fun updateRole(entity: RoleEntity, subject: Subject? = null): Single<RoleEntity> {
+    fun update(entity: RoleEntity, subject: Subject? = null): Single<RoleEntity> {
         return roleHazelcastRepository.update(entity) { originalItem, newItem ->
             subject?.let {
-                subject.checkPermission(WildcardPermission("roles:update:${originalItem.tenant}"))
+                subject.checkPermission("roles:update:${originalItem.tenant}")
             }
 
             //Update logic for automated fields @TODO consider automation with annotations
@@ -76,6 +76,4 @@ class RoleService(
             )
         }
     }
-}
-
 }

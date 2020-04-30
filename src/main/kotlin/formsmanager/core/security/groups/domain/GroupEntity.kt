@@ -69,7 +69,7 @@ data class GroupEntityCreator(
      * Convert to GroupEntity.
      * Id is a parameter to allow Creators to be used for existing entities (such as when doing a Update)
      */
-    fun toGroupEntity(internalId: UUID, tenant: UUID): GroupEntity{
+    fun toGroupEntity(internalId: UUID = UUID.randomUUID(), tenant: UUID): GroupEntity{
         return GroupEntity(
                 internalId = internalId,
                 ol = ol,
