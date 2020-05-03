@@ -2,7 +2,6 @@ package formsmanager.core.security.roles.domain
 
 import formsmanager.core.*
 import formsmanager.core.hazelcast.map.CrudableObject
-import formsmanager.core.hazelcast.map.MapKey
 import formsmanager.core.security.roles.RoleMapKey
 import formsmanager.core.security.roles.repository.RoleEntityWrapper
 import io.swagger.v3.oas.annotations.media.Schema
@@ -39,10 +38,10 @@ data class RoleEntity(
         TenantField,
         CrudableObject {
     override fun toEntityWrapper(): RoleEntityWrapper {
-        return RoleEntityWrapper(getMapKey(), this::class.qualifiedName!!, this)
+        return RoleEntityWrapper(mapKey(), this::class.qualifiedName!!, this)
     }
 
-    override fun getMapKey(): RoleMapKey {
+    override fun mapKey(): RoleMapKey {
         return RoleMapKey(name, tenant)
     }
 }

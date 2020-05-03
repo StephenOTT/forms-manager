@@ -1,6 +1,7 @@
 package formsmanager.core.hazelcast.map
 
 import formsmanager.core.hazelcast.map.persistence.MapStoreItemWrapperEntity
+import net.minidev.json.annotate.JsonIgnore
 import java.util.*
 
 /**
@@ -30,14 +31,12 @@ interface CrudableObject {
     /**
      * Converts object to a Wrapped object used in Database storage (jpa)
      */
+    @JsonIgnore
     fun toEntityWrapper(): MapStoreItemWrapperEntity<*>
 
     /**
      * Get the MapKey for this crudable object.
      */
-    fun getMapKey(): MapKey
-}
-
-interface MapKey{
-    fun toUUID(): UUID
+    @JsonIgnore
+    fun mapKey(): MapKey
 }

@@ -38,6 +38,7 @@ class ShiroFactory {
 
         // Disable sessions for subjects:
         // See notes in https://shiro.apache.org/session-management.html#SessionManagement-DisablingSubjectStateSessionStorage
+        //@TODO REVIEW
         manager.subjectDAO = DefaultSubjectDAO()
                 .apply {
                     sessionStorageEvaluator = DefaultSessionStorageEvaluator()

@@ -6,6 +6,7 @@ import formsmanager.tenants.service.TenantService
 import formsmanager.users.UserMapKey
 import formsmanager.users.domain.UserEntity
 import formsmanager.users.repository.UsersHazelcastRepository
+import io.reactivex.Completable
 import io.reactivex.Single
 import org.apache.shiro.authz.permission.WildcardPermission
 import org.apache.shiro.subject.Subject
@@ -25,34 +26,30 @@ class UserService(
         private val log = LoggerFactory.getLogger(UserService::class.java)
     }
 
-    fun createUser(email: String, tenant: UUID, subject: Subject? = null): Single<UserEntity>{
-        return createUser(UserMapKey(email, tenant), subject)
+    fun createUser(email: String, tenantName: String, subject: Subject? = null): Single<UserEntity> {
+        return createUser(UserMapKey(email, tenantName), subject)
     }
 
     fun createUser(userMapKey: UserMapKey, subject: Subject? = null): Single<UserEntity> {
-        return Single.fromCallable {
-            subject?.let {
-                require(!it.isAuthenticated, lazyMessage = { "Cannot create user. Only anonymous users can create a user." })
-            }
-
-        }.flatMap {
-            tenantService.tenantExists(userMapKey.tenant)
-
-        }.flatMap {
-            userRepository.exists(userMapKey.toUUID())
-
-        }.map {
-            if (it) {
-                throw IllegalArgumentException("Unable to create user. User Already exists.")
-            } else {
-                UserEntity.newUser(userMapKey.email, userMapKey.tenant)
-            }
-
-        }.doOnSuccess {
-            log.ifDebugEnabled { "User Entity being Created: ${it}." }
-        }.flatMap {
-            userRepository.create(it)
+        subject?.let {
+            require(!it.isAuthenticated, lazyMessage = { "Cannot create user. Only anonymous users can create a user." })
         }
+        return tenantService.tenantExists(userMapKey.tenant, true)
+                .flatMap {
+                    userRepository.exists(userMapKey.toUUID())
+
+                }.map {
+                    if (it) {
+                        throw IllegalArgumentException("Unable to create user. User Already exists.")
+                    } else {
+                        UserEntity.newUser(userMapKey.email, userMapKey.tenant)
+                    }
+
+                }.doOnSuccess {
+                    log.ifDebugEnabled { "User Entity being Created: ${it}." }
+                }.flatMap {
+                    userRepository.create(it)
+                }
     }
 
     fun getUser(userMapKey: UserMapKey, subject: Subject? = null): Single<UserEntity> {
@@ -160,22 +157,18 @@ class UserService(
                              cleartextPassword: CharArray,
                              subject: Subject? = null
     ): Single<UserEntity> {
-        return Single.fromCallable {
-            subject?.let {
-                require(!it.isAuthenticated, { "Unable to complete registration. Must be a anonymous user in order to complete a registration." })
-            }
-
-        }.flatMap {
-            getUser(userMapKey) .map {
-                require(it.emailInfo.email == userMapKey.email) { "Invalid Email" }
-                require(it.emailInfo.emailConfirmToken == emailConfirmToken) { "Invalid email token." }
-                require(!it.emailInfo.emailConfirmed) { "Email is already confirmed." }
-                check(it.passwordInfo.passwordHash == null) { "Password hash issue," }
-                check(it.passwordInfo.salt == null) { "Password salt issue." }
-                check(it.passwordInfo.resetPasswordInfo != null) { "Password reset issue." }
-                require(it.passwordInfo.resetPasswordInfo.resetPasswordToken == pwdResetToken) { "Invalid password token." }
-                it
-            }
+        subject?.let {
+            require(!it.isAuthenticated, { "Unable to complete registration. Must be a anonymous user in order to complete a registration." })
+        }
+        return getUser(userMapKey).map {
+            require(it.emailInfo.email == userMapKey.email) { "Invalid Email" }
+            require(it.emailInfo.emailConfirmToken == emailConfirmToken) { "Invalid email token." }
+            require(!it.emailInfo.emailConfirmed) { "Email is already confirmed." }
+            check(it.passwordInfo.passwordHash == null) { "Password hash issue," }
+            check(it.passwordInfo.salt == null) { "Password salt issue." }
+            check(it.passwordInfo.resetPasswordInfo != null) { "Password reset issue." }
+            require(it.passwordInfo.resetPasswordInfo.resetPasswordToken == pwdResetToken) { "Invalid password token." }
+            it
 
         }.flatMap { ue ->
             passwordService.hashPassword(cleartextPassword).map {

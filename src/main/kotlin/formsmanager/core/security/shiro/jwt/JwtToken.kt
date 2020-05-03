@@ -4,6 +4,7 @@ import org.apache.shiro.authc.AuthenticationToken
 
 /**
  * Shiro AuthenticationToken for JWT Tokens
+ * "tenantName:email"
  */
 data class JwtToken(private val subjectPrincipal: String) : AuthenticationToken {
 

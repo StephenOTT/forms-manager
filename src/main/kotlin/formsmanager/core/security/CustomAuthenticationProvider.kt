@@ -50,10 +50,10 @@ class CustomAuthenticationProvider(
         val identity = authenticationRequest.identity.toString()
 
         //@TODO refactor this with a new UsernamePasswordToken that accepts a Tenant.  Must also refactor the UserDetails class for Micronaut, and the default Micronaut security controller for /login
-        val email = identity.substringAfter(":", "")
-        val tenant = UUID.fromString(identity.substringBefore(":", ""))
+        val email: String = identity.substringAfter(":", "")
+        val tenantName: String = identity.substringBefore(":", "")
 
-        return userService.getUser(UserMapKey(email, tenant))
+        return userService.getUser(UserMapKey(email, tenantName))
                 .onErrorResumeNext {
                     // @TODO review
                     // Could not find the email in users
@@ -89,7 +89,7 @@ class CustomAuthenticationProvider(
                     } else {
 
                         // LOGIN SUCCESS:
-                        UserDetails(ue.emailInfo.email, listOf()) as AuthenticationResponse //Requires the cast for compiler to pick it up correctly
+                        UserDetails("${tenantName}:${ue.emailInfo.email}", listOf()) as AuthenticationResponse //Requires the cast for compiler to pick it up correctly
                     }
 
                 }.toFlowable().onErrorReturn {

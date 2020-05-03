@@ -40,10 +40,10 @@ data class FormSchemaEntity(
         CrudableObject {
 
     override fun toEntityWrapper(): FormSchemaEntityWrapper {
-        return FormSchemaEntityWrapper(getMapKey(), this::class.qualifiedName!!, this)
+        return FormSchemaEntityWrapper(mapKey(), this::class.qualifiedName!!, this)
     }
 
-    override fun getMapKey(): FormSchemaMapKey {
+    override fun mapKey(): FormSchemaMapKey {
         return FormSchemaMapKey(internalId)
     }
 }

@@ -33,10 +33,10 @@ data class TenantEntity(
         CrudableObject {
 
     override fun toEntityWrapper(): TenantEntityWrapper {
-        return TenantEntityWrapper(getMapKey(), this::class.qualifiedName!!, this)
+        return TenantEntityWrapper(mapKey(), this::class.qualifiedName!!, this)
     }
 
-    override fun getMapKey(): TenantMapKey {
+    override fun mapKey(): TenantMapKey {
         return TenantMapKey(name)
     }
 }

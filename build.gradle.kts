@@ -16,7 +16,15 @@ plugins {
     id("org.jetbrains.kotlin.kapt") version kotlinVersion
     id("org.jetbrains.kotlin.plugin.allopen") version kotlinVersion
     id("org.jetbrains.kotlin.plugin.jpa") version "1.3.71"
-    
+    id("idea")
+
+}
+
+idea {
+    module {
+        isDownloadJavadoc = true
+        isDownloadSources = true
+    }
 }
 
 version = "0.1"
@@ -25,7 +33,6 @@ group = "forms-manager"
 repositories {
     mavenCentral()
     jcenter()
-    maven("https://oss.jfrog.org/oss-snapshot-local")
 }
 
 configurations {
@@ -68,7 +75,7 @@ dependencies {
     kapt("io.micronaut.configuration:micronaut-openapi:1.4.3")
     implementation("io.swagger.core.v3:swagger-annotations")
 
-    implementation("org.apache.shiro:shiro-core:1.5.2")
+    implementation("org.apache.shiro:shiro-core:1.5.3")
 
     kapt("io.micronaut:micronaut-security:1.4.0")
     implementation("io.micronaut:micronaut-security-jwt:1.4.0")

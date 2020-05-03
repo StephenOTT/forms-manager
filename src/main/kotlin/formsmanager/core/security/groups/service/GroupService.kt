@@ -1,9 +1,22 @@
 package formsmanager.core.security.groups.service
 
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.hazelcast.query.Predicate
+import com.hazelcast.query.Predicates
+import formsmanager.core.hazelcast.query.PagingUtils
+import formsmanager.core.hazelcast.query.beanDescription
+import formsmanager.core.hazelcast.query.predicate.SecurityPredicate
 import formsmanager.core.security.groups.GroupMapKey
 import formsmanager.core.security.groups.domain.GroupEntity
 import formsmanager.core.security.groups.repository.GroupHazelcastRepository
+import formsmanager.forms.domain.FormSchemaEntity
+import io.micronaut.context.ApplicationContext
+import io.micronaut.core.beans.BeanIntrospector
+import io.micronaut.data.model.Pageable
+import io.reactivex.Flowable
 import io.reactivex.Single
+import org.apache.shiro.authz.annotation.Logical
+import org.apache.shiro.authz.permission.WildcardPermission
 import org.apache.shiro.subject.Subject
 import org.slf4j.LoggerFactory
 import java.time.Instant
@@ -16,7 +29,9 @@ import javax.inject.Singleton
  */
 @Singleton
 class GroupService(
-        private val groupHazelcastRepository: GroupHazelcastRepository
+        private val groupHazelcastRepository: GroupHazelcastRepository,
+        private val mapper: ObjectMapper,
+        private val appCxt: ApplicationContext
 ) {
 
     companion object {
@@ -77,6 +92,44 @@ class GroupService(
                     createdAt = originalItem.createdAt,
                     updatedAt = Instant.now()
             )
+        }
+    }
+
+    /**
+     * See SqlPredicate for query capabilities.
+     * For all results see Predicates.AlwaysTrue().
+     */
+    fun search(predicate: Predicate<UUID, GroupEntity>, pageable: Pageable, subject: Subject?): Flowable<GroupEntity> {
+
+        return Flowable.fromCallable {
+            // Gets the jackson BeanDescription for the entity
+            val beanDesc = mapper.beanDescription<FormSchemaEntity>()
+
+            val finalPred: Predicate<UUID, GroupEntity> =
+                    if (subject != null) {
+                        val secPred = SecurityPredicate<GroupEntity>(subject, Logical.AND) {
+                            listOf(
+                                    WildcardPermission("groups:read:${it.tenant}")
+                            )
+                        }
+                        appCxt.inject(secPred) //@TODO review
+                        //Combine the Security predicate with the SqlPredicate
+                        Predicates.and(secPred, predicate)
+                    } else {
+                        // If the subject was null/not provided, then just use the provided predicate (no need for the security predicate)
+                        predicate
+                    }
+
+            val comparators = PagingUtils.createPagingPredicateComparators<UUID, GroupEntity>(beanDesc, pageable)
+            PagingUtils.createPagingPredicate(
+                    finalPred,
+                    comparators,
+                    if (pageable.size == 0) 10 else pageable.size, // @TODO review: this is currently a fall back, to say that results are always paged, regardless.
+                    pageable.number
+            )
+
+        }.flatMapIterable {
+            groupHazelcastRepository.mapService.values(it)
         }
     }
 }

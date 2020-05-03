@@ -48,7 +48,8 @@ Notes:
 1. Distributed Query for Hazelcast only works with items that are in Mem (obviously ;) ).  So If items are evicted from the mem based on TTL, then query will not find them.  Items that require search need to be findable based ID.  Use a object as ID that is a makeup of known values for that item.
 
 1. MapKeys are based on a combination of multiple values in a Entity that make up the unique text.  That text is this turned into a UUID **v3**
-1. 
+1. When using the Near Cache on a IMap with Shrio Authz cache, make sure Principal Objects are Serializable (example PrimaryPrincipal.class had to be made serializable) so it can be cached by Shrio.  @TODO Review for ways to remove this need.
+
 
 questions
 1. Member selection for distributed tasks: To only have specific nodes work on specific tasks.
@@ -66,8 +67,8 @@ todo:
 1. Eventually move to an ID Generator that is not built in UUID, as UUID is only 99.99 and could be collisions
 1. Add user registration limits for username and password: length, password complexity, etc
 1. Create a user Entity update page for Admin and for Regular users.
-1. ** deal with scenarios of who owns tenants and groups: and how someone can assign the owner of an object: (Likely a permission)** 
-1. ** convert UUID key for users into a Object that is Email + Tenant.  Id field in object will remain as its still needed for unique ID that is unchangable   
+1. ** deal with scenarios of who owns tenants and groups: and how someone can assign the owner of an object: (Likely a permission)**    
+1. ** Convert to modern binary serialization to replace Serialization for Shiro Cache (Using Hz) **  
 
 Python execution service:
 

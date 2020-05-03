@@ -36,9 +36,9 @@ abstract class HazelcastCrudRepository<O : CrudableObject>(
      */
     fun create(item: O): Single<O> {
         return Single.fromFuture(
-                mapService.submitToKey(item.getMapKey().toUUID(), CreateEntryProcessor<UUID, O>(item)).toCompletableFuture())
+                mapService.submitToKey(item.mapKey().toUUID(), CreateEntryProcessor<UUID, O>(item)).toCompletableFuture())
                 .onErrorResumeNext {
-                    Single.error(CrudOperationException("Unable to create ${item.getMapKey()}.", it))
+                    Single.error(CrudOperationException("Unable to create ${item.mapKey()}.", it))
                 }.doOnSuccess {
                     log.ifDebugEnabled { "Entity Created: $it" }
                 }
@@ -50,9 +50,9 @@ abstract class HazelcastCrudRepository<O : CrudableObject>(
     fun update(item: O, updateLogic: (originalItem: O, newItem: O) -> O): Single<O> {
         //@TODO Review for refactor optimizations
         return Single.fromFuture(
-                mapService.submitToKey(item.getMapKey().toUUID(), AdvUpdateEntryProcessor<UUID, O>(item, updateLogic)).toCompletableFuture())
+                mapService.submitToKey(item.mapKey().toUUID(), AdvUpdateEntryProcessor<UUID, O>(item, updateLogic)).toCompletableFuture())
                 .onErrorResumeNext {
-                    Single.error(CrudOperationException("Unable to create ${item.getMapKey()}.", it))
+                    Single.error(CrudOperationException("Unable to create ${item.mapKey()}.", it))
                 }.doOnSuccess {
                     log.ifDebugEnabled { "Entity Updated: $it" }
                 }

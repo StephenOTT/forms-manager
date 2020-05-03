@@ -9,3 +9,12 @@ hazelcast:
         enabled: true
         member-list:
           - 127.0.0.1:5701
+  map:
+    # Generic Shiro Cache Manager setup to support near cache of authorizations
+    "shiro_cache__*":
+      time-to-live-seconds: 600
+      max-idle-seconds: 300
+      near-cache:
+        time-to-live-seconds: 600
+        max-idle-seconds: 300
+        invalidate-on-change: true

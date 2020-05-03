@@ -1,16 +1,16 @@
 package formsmanager.core.security.groups.domain
 
-import formsmanager.core.ConfigField
-import formsmanager.core.DataField
-import formsmanager.core.TenantField
-import formsmanager.core.TimestampFields
+import formsmanager.core.*
 import formsmanager.core.hazelcast.map.CrudableObject
 import formsmanager.core.security.groups.GroupMapKey
 import formsmanager.core.security.groups.repository.GroupEntityWrapper
 import formsmanager.core.security.shiro.domain.Role
 import io.swagger.v3.oas.annotations.media.Schema
+import net.minidev.json.annotate.JsonIgnore
 import java.time.Instant
 import java.util.*
+
+interface SecurityAware: TenantField, OwnerField
 
 @Schema
 data class GroupEntity(
@@ -33,20 +33,31 @@ data class GroupEntity(
 
         override val config: Map<String, Any?> = mapOf(),
 
-        override val tenant: UUID
+        override val tenant: UUID,
 
-        ): TimestampFields,
+        override val owner: UUID = UUID.nameUUIDFromBytes("dog".toByteArray())
+
+): TimestampFields,
         DataField,
         ConfigField,
         TenantField,
+        SecurityAware,
+        Comparable<GroupEntity>,
         CrudableObject {
 
     override fun toEntityWrapper(): GroupEntityWrapper {
-        return GroupEntityWrapper(getMapKey().toUUID(), this::class.qualifiedName!!, this)
+        return GroupEntityWrapper(mapKey().toUUID(), this::class.qualifiedName!!, this)
     }
 
-    override fun getMapKey(): GroupMapKey {
+    override fun mapKey(): GroupMapKey {
         return GroupMapKey(this.name, this.tenant)
+    }
+
+    /**
+     * Compares based on the createdAt property
+     */
+    override fun compareTo(other: GroupEntity): Int {
+        return this.createdAt.compareTo(other.createdAt)
     }
 }
 
@@ -62,7 +73,8 @@ data class GroupEntityCreator(
 
         val config: Map<String, Any?> = mapOf(),
 
-        val roles: Set<Role> = setOf()
+        val roles: Set<Role> = setOf(),
+        val tenant: String //@TODO remove later
 
 ){
     /**

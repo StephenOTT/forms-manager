@@ -50,7 +50,7 @@ class TenantController(
      */
     @Post("/")
     fun createTenant(subject: Subject, @Body tenant: TenantEntityCreator): Single<HttpResponse<TenantEntity>> {
-        return tenantService.createTenant(tenant.toTenantEntity(), subject)
+        return tenantService.createTenant(tenant.toTenantEntity())//@TODO !!** RE-ADD The Subject
                 .map {
                     HttpResponse.ok(it)
                 }

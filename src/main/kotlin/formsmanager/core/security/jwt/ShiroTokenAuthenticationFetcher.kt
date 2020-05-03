@@ -24,7 +24,7 @@ import javax.inject.Singleton
  * Shrio "trusts" the validation of the Token, and accepts the subject of the token as the Shiro Authenticated User/Account/Principal.
  */
 @Singleton
-@Replaces(JwtTokenValidator::class)
+@Replaces(TokenAuthenticationFetcher::class)
 class ShiroTokenAuthenticationFetcher(
         tokenValidators: Collection<TokenValidator>,
         tokenResolver: TokenResolver,
@@ -44,9 +44,9 @@ class ShiroTokenAuthenticationFetcher(
 
             kotlin.runCatching {
                 subject.login(JwtToken(it.name))
-            }.onFailure {
-                log.ifDebugEnabled { "Login failed: ${it::class.qualifiedName} with message: ${it.message}" }
-                throw it //@TODO add better error handler
+            }.onFailure { e ->
+                log.ifDebugEnabled { "Login failed: ${it::class.qualifiedName} with message: ${e.message}" }
+                throw e //@TODO add better error handler
 
             }.onSuccess {
                 log.ifDebugEnabled { "Login Success as ${subject.principal}" }

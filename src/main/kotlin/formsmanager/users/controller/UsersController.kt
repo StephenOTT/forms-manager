@@ -14,7 +14,8 @@ import org.apache.shiro.authz.annotation.RequiresGuest
 import org.apache.shiro.subject.Subject
 import java.util.*
 
-@Controller("/users/{tenant}")
+@Controller("/users/{tenantName}")
+@RequiresGuest
 class UsersController(
         private val userService: UserService,
         private val tenantService: TenantService
@@ -22,8 +23,8 @@ class UsersController(
 
     @Post("/register")
     @RequiresGuest
-    fun register(subject: Subject, @QueryValue tenant: UUID, @Body registration: UserRegistration): Single<HttpResponse<UserRegistrationResponse>> {
-        return userService.createUser(registration.email, tenant, subject)
+    fun register(subject: Subject, @QueryValue tenantName: String, @Body registration: UserRegistration): Single<HttpResponse<UserRegistrationResponse>> {
+        return userService.createUser(registration.email, tenantName, subject)
                 .map {
                     HttpResponse.created(
                             UserRegistrationResponse("Pending email verification")
@@ -33,18 +34,13 @@ class UsersController(
 
     @Post("/register/complete")
     @RequiresGuest
-    fun completeRegistration(@QueryValue tenant: UUID, @Body body: CompleteRegistrationRequest): Single<HttpResponse<UserRegistrationResponse>> {
-
-        val mapKey = UserMapKey(body.email, tenant)
-
+    fun completeRegistration(@QueryValue tenantName: String, @Body body: CompleteRegistrationRequest): Single<HttpResponse<UserRegistrationResponse>> {
         return userService.completeRegistration(
-                mapKey,
+                UserMapKey(body.email, tenantName),
                 body.emailConfirmToken,
                 body.pwdResetToken,
                 body.cleartextPassword
-
         ).map {
-            body.destroyPwd() //@TODO review if this is needed
             HttpResponse.created(UserRegistrationResponse("completed"))
         }
     }

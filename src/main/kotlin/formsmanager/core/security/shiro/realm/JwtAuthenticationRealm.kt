@@ -35,17 +35,20 @@ class JwtAuthenticationRealm(
         if (token is JwtToken) {
 
             //@TODO refactor to update the Micronaut JWT to include a tenant claim.
-            val email = token.principal.substringAfter(":", "")
-            val tenant = UUID.fromString(token.principal.substringBefore(":", ""))
+            val email: String = token.principal.substringAfter(":", "")
+            val tenantName: String = token.principal.substringBefore(":", "")
 
+            //@TODO review for better handling of a bad login.  Currently not working correctly when principal name cannot be found
             return kotlin.runCatching {
-                userService.getUser(UserMapKey(email, tenant)).map {
+                userService.getUser(UserMapKey(email, tenantName)).map {
                     if (it.accountActive()){
-                        JwtAuthenticationInfo(token)
+                        JwtAuthenticationInfo(email, tenantName, token)
                     } else {
                         throw IllegalArgumentException("JWT cannot be accepted: Account is not active.")
                     }
                 }.subscribeOn(Schedulers.io()).blockingGet()
+            }.onFailure {
+                log.error("JWT Login error: ${it.message}", it)
             }.getOrNull()
 
         } else {

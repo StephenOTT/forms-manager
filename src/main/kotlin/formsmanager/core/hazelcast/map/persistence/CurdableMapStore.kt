@@ -45,7 +45,7 @@ abstract class CurdableMapStore<E: CrudableObject, W: MapStoreItemWrapperEntity<
         return StreamSupport.stream(mapStoreRepository.findAll().spliterator(), true)
                 .map {
                     it.value
-                }.collect(Collectors.toMap({ it.getMapKey().toUUID() }, { it }))
+                }.collect(Collectors.toMap({ it.mapKey().toUUID() }, { it }))
     }
 
     override fun deleteAll(keys: MutableCollection<UUID>) {

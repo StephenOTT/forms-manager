@@ -13,7 +13,7 @@ import org.apache.shiro.authz.permission.WildcardPermission
 data class Role(
         val name: String,
         val permissions: Set<String> = setOf()
-) {
+): Comparable<Role> {
 
     fun permissionStringsToWildcardPermissions(): Set<Permission>{
         //@TODO refactor for performance
@@ -28,5 +28,12 @@ data class Role(
         return permissionStringsToWildcardPermissions().any {
             it.implies(p)
         }
+    }
+
+    /**
+     * Compares based on Role name.
+     */
+    override fun compareTo(other: Role): Int {
+        return this.name.compareTo(other.name)
     }
 }

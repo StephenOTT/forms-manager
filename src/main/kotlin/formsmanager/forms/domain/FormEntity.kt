@@ -2,7 +2,6 @@ package formsmanager.forms.domain
 
 import formsmanager.core.*
 import formsmanager.core.hazelcast.map.CrudableObject
-import formsmanager.core.hazelcast.map.MapKey
 import formsmanager.forms.FormMapKey
 import formsmanager.forms.respository.FormEntityWrapper
 import io.swagger.v3.oas.annotations.media.Schema
@@ -45,10 +44,10 @@ data class FormEntity(
         TenantField,
         CrudableObject {
     override fun toEntityWrapper(): FormEntityWrapper {
-        return FormEntityWrapper(getMapKey(), this::class.qualifiedName!!, this)
+        return FormEntityWrapper(mapKey(), this::class.qualifiedName!!, this)
     }
 
-    override fun getMapKey(): FormMapKey {
+    override fun mapKey(): FormMapKey {
         return FormMapKey(name, tenant)
     }
 }

@@ -3,7 +3,6 @@ package formsmanager.users.domain
 import formsmanager.core.TenantField
 import formsmanager.core.TimestampFields
 import formsmanager.core.hazelcast.map.CrudableObject
-import formsmanager.core.hazelcast.map.MapKey
 import formsmanager.core.security.groups.domain.GroupEntity
 import formsmanager.core.security.shiro.domain.Role
 import formsmanager.users.UserMapKey
@@ -45,7 +44,10 @@ data class UserEntity(
 
         fun defaultUserRole(tenant: UUID, userInternalId: UUID): Role {
             return Role(USER_ROLE, setOf(
-                    "users:read,edit:${tenant}:${userInternalId}"
+                    //@TODO move to configuration
+                    "users:read,edit:${tenant}:${userInternalId}",
+                    "groups:create,read,edit:${tenant}",
+                    "groups:create:*"
             ))
         }
 
@@ -75,10 +77,10 @@ data class UserEntity(
     }
 
     override fun toEntityWrapper(): UserEntityWrapper {
-        return UserEntityWrapper(getMapKey(), this::class.qualifiedName!!, this)
+        return UserEntityWrapper(mapKey(), this::class.qualifiedName!!, this)
     }
 
-    override fun getMapKey(): UserMapKey {
+    override fun mapKey(): UserMapKey {
         return UserMapKey(emailInfo.email, tenant)
     }
 

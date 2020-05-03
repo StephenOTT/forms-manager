@@ -24,12 +24,6 @@ data class CompleteRegistrationRequest(
         var cleartextPassword: CharArray
 ) {
 
-    fun destroyPwd(){
-        this.cleartextPassword.forEachIndexed { index, _ ->
-            this.cleartextPassword[index] = Char.MIN_VALUE
-        }
-    }
-
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false

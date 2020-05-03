@@ -1,31 +1,32 @@
 package formsmanager.core.security.groups.controler
 
-import com.hazelcast.internal.util.filter.Filter
-import com.hazelcast.query.impl.predicates.SqlPredicate
 import formsmanager.core.exception.NotFoundException
+import formsmanager.core.hazelcast.query.sql.Filterable
+import formsmanager.core.hazelcast.query.sql.SqlPredicateValidationRules
+import formsmanager.core.hazelcast.query.sql.checkPredicateRules
 import formsmanager.core.security.groups.GroupMapKey
 import formsmanager.core.security.groups.domain.GroupEntity
 import formsmanager.core.security.groups.domain.GroupEntityCreator
 import formsmanager.core.security.groups.domain.GroupEntityModifier
 import formsmanager.core.security.groups.service.GroupService
+import formsmanager.core.security.shiro.domain.Role
 import formsmanager.tenants.TenantMapKey
-import formsmanager.tenants.domain.TenantEntity
-import formsmanager.tenants.domain.TenantEntityCreator
-import formsmanager.tenants.domain.TenantEntityModifier
-import formsmanager.tenants.service.TenantService
+import io.micronaut.data.model.Pageable
 import io.micronaut.http.HttpRequest
 import io.micronaut.http.HttpResponse
 import io.micronaut.http.annotation.*
+import io.reactivex.Flowable
 import io.reactivex.Single
 import org.apache.shiro.authz.AuthorizationException
+import org.apache.shiro.authz.annotation.RequiresAuthentication
 import org.apache.shiro.authz.annotation.RequiresGuest
 import org.apache.shiro.subject.Subject
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 
-//@RequiresAuthentication
-@RequiresGuest
+@RequiresAuthentication
+//@RequiresGuest
 @Controller("security/{tenantName}/groups")
 class GroupsController(
         private val groupService: GroupService
@@ -43,15 +44,28 @@ class GroupsController(
      * @exception NotFoundException Could not find group based on the group name.
      */
     @Get("/{groupName}")
-    fun get(subject: Subject, @QueryValue tenantName: String, @QueryValue groupName: String): Single<HttpResponse<GroupEntity>> {
+    fun get(subject: Subject, @QueryValue tenantName: String, @QueryValue groupName: String, filter: Filterable?): Single<HttpResponse<GroupEntity>> {
         return groupService.getGroup(GroupMapKey(groupName, tenantName), subject)
                 .map {
                     HttpResponse.ok(it)
                 }
     }
 
-    fun search(){
+    @Get("/")
+    fun search(subject: Subject,
+               @QueryValue tenantName: String,
+               filter: Filterable,
+               pageable: Pageable): Single<HttpResponse<List<GroupEntity>>> {
 
+        //@TODO Add rules
+        filter.checkPredicateRules(SqlPredicateValidationRules())
+        //@TODO add security check on each returned item.
+        //If items are removed from sec check, then pull more items
+
+        return groupService.search(filter.toPredicate(), pageable, subject)
+                .toList().map {
+                    HttpResponse.ok(it)
+                }
     }
 
     /**
@@ -61,7 +75,7 @@ class GroupsController(
      */
     @Post("/")
     fun create(subject: Subject, @QueryValue tenantName: String, @Body groupCreator: GroupEntityCreator): Single<HttpResponse<GroupEntity>> {
-        return groupService.createGroup(groupCreator.toGroupEntity(tenant = TenantMapKey(tenantName).toUUID()), subject)
+        return groupService.createGroup(groupCreator.toGroupEntity(tenant = TenantMapKey(groupCreator.tenant).toUUID()), subject)
                 .map {
                     HttpResponse.ok(it)
                 }
