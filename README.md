@@ -50,6 +50,7 @@ Notes:
 1. MapKeys are based on a combination of multiple values in a Entity that make up the unique text.  That text is this turned into a UUID **v3**
 1. When using the Near Cache on a IMap with Shrio Authz cache, make sure Principal Objects are Serializable (example PrimaryPrincipal.class had to be made serializable) so it can be cached by Shrio.  @TODO Review for ways to remove this need.
 
+1. add expression handler to build custom dynmaic permissions for shiro wildcard https://stackoverflow.com/questions/2286648/named-placeholders-in-string-formatting
 
 questions
 1. Member selection for distributed tasks: To only have specific nodes work on specific tasks.

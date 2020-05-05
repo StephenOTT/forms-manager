@@ -1,10 +1,12 @@
 package formsmanager.core.hazelcast.query.predicate
 
 import com.hazelcast.query.Predicate
+import formsmanager.Application
 import formsmanager.core.hazelcast.context.InjectAware
 import formsmanager.core.security.groups.domain.SecurityAware
 import formsmanager.core.security.shiro.principal.PrimaryPrincipal
 import io.micronaut.context.annotation.Parameter
+import io.micronaut.context.annotation.Prototype
 import org.apache.shiro.authz.Permission
 import org.apache.shiro.authz.annotation.Logical
 import org.apache.shiro.mgt.SecurityManager
@@ -20,11 +22,12 @@ import javax.inject.Inject
  * @param permissionGenerator a function that will return a list of 1 or more Shiro permissions (typical usage is WildcardPermission).
  */
 @InjectAware
+@Prototype
 class SecurityPredicate<T : SecurityAware>(@Parameter private val userMapKey: UUID,
                                            @Parameter private val permissionsLogical: Logical,
                                            @Parameter private val permissionGenerator: (secObject: T) -> List<Permission>) : Predicate<UUID, T> {
 
-    @Inject
+    @Inject @Transient
     lateinit var securityManager: SecurityManager
 
     constructor(@Parameter subject: Subject,

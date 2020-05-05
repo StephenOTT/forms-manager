@@ -8,7 +8,6 @@ import org.slf4j.LoggerFactory
 import javax.inject.Singleton
 import kotlin.reflect.full.hasAnnotation
 
-
 @Singleton
 class MicronautManagedContext(
         private val applicationContext: ApplicationContext
@@ -21,7 +20,6 @@ class MicronautManagedContext(
     @ExperimentalStdlibApi
     override fun initialize(instance: Any?): Any? {
         if (instance != null) {
-            println("--->${instance::class.qualifiedName}")
             if (instance is RunnableAdapter<*>) {
                 injectIfInjectAware(instance.runnable)
             } else {

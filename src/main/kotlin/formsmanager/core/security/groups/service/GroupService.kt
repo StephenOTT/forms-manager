@@ -11,6 +11,7 @@ import formsmanager.core.security.groups.domain.GroupEntity
 import formsmanager.core.security.groups.repository.GroupHazelcastRepository
 import formsmanager.forms.domain.FormSchemaEntity
 import io.micronaut.context.ApplicationContext
+import io.micronaut.context.BeanContext
 import io.micronaut.core.beans.BeanIntrospector
 import io.micronaut.data.model.Pageable
 import io.reactivex.Flowable
@@ -102,8 +103,6 @@ class GroupService(
     fun search(predicate: Predicate<UUID, GroupEntity>, pageable: Pageable, subject: Subject?): Flowable<GroupEntity> {
 
         return Flowable.fromCallable {
-            // Gets the jackson BeanDescription for the entity
-            val beanDesc = mapper.beanDescription<FormSchemaEntity>()
 
             val finalPred: Predicate<UUID, GroupEntity> =
                     if (subject != null) {
@@ -112,7 +111,10 @@ class GroupService(
                                     WildcardPermission("groups:read:${it.tenant}")
                             )
                         }
-                        appCxt.inject(secPred) //@TODO review
+                        // Injection of bean due to missing code in HZ for injection of Predicates that are local (if the predicate was created through serialization then it will have injection)
+                        // @ISSUE https://github.com/hazelcast/hazelcast/issues/16957
+                        appCxt.inject(secPred)
+
                         //Combine the Security predicate with the SqlPredicate
                         Predicates.and(secPred, predicate)
                     } else {
@@ -120,7 +122,12 @@ class GroupService(
                         predicate
                     }
 
+            // Gets the jackson BeanDescription for the entity
+            val beanDesc = mapper.beanDescription<FormSchemaEntity>()
+
+            // Build comparators lists
             val comparators = PagingUtils.createPagingPredicateComparators<UUID, GroupEntity>(beanDesc, pageable)
+
             PagingUtils.createPagingPredicate(
                     finalPred,
                     comparators,

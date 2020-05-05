@@ -12,14 +12,14 @@ object SqlPredicateRules {
     // @TODO convert this configuration
 
     object StructureRules {
-        val maxSqlStringLengh: Int = 255
+        val maxSqlStringLength: Int = 255
 //        val maxInItems: Int = 5
     }
 
     object Keywords {
         const val ENTRY_KEY_ATTRIBUTE_KEYWORD = "__key"
         const val THIS_KEYWORD = "this"
-        const val ANY_KEYWORD = "any"
+        const val ANY_KEYWORD = "[any]"
         const val MULTIPLE_CHARACTERS_KEYWORD = "%"
         const val SINGLE_CHARACTER_KEYWORD = "_"
     }
@@ -29,54 +29,103 @@ object SqlPredicateRules {
         const val PROPERTY_DOT_ACCESSOR_REGEX = "\\."
     }
 
-    object Predicates {
-        val REGEX = RegexPredicate::class
-        val AND = AndPredicate::class
-        val OR = OrPredicate::class
-        val EQUAL = EqualPredicate::class
-        val NOT_EQUAL = NotEqualPredicate::class
-        val EQUAL_LESS_GREATER = GreaterLessPredicate::class
-        val LIKE = LikePredicate::class
-        val ILIKE = ILikePredicate::class
-        val BETWEEN = BetweenPredicate::class
-        val IN = InPredicate::class
-        val NOT = NotPredicate::class
 
-        val ALL_PREDICATES = listOf(
-                REGEX, AND, OR,
-                EQUAL, NOT_EQUAL, EQUAL_LESS_GREATER,
-                LIKE, ILIKE, BETWEEN,
-                IN, NOT
-        )
+    enum class SqlPredicates{
+        REGEX{
+            override fun predicateClass(): KClass<out Predicate<*, *>> {
+                return RegexPredicate::class
+            }
+        },
+        AND {
+            override fun predicateClass(): KClass<out Predicate<*, *>> {
+                return AndPredicate::class
+            }
+        },
+        OR {
+            override fun predicateClass(): KClass<out Predicate<*, *>> {
+                return OrPredicate::class
+            }
+        },
+        EQUAL {
+            override fun predicateClass(): KClass<out Predicate<*, *>> {
+                return EqualPredicate::class
+            }
+        },
+        NOT_EQUAL {
+            override fun predicateClass(): KClass<out Predicate<*, *>> {
+                return NotEqualPredicate::class
+            }
+        },
+        EQUAL_LESS_GREATER {
+            override fun predicateClass(): KClass<out Predicate<*, *>> {
+                return GreaterLessPredicate::class
+            }
+        },
+        LIKE {
+            override fun predicateClass(): KClass<out Predicate<*, *>> {
+                return LikePredicate::class
+            }
+        },
+        ILIKE {
+            override fun predicateClass(): KClass<out Predicate<*, *>> {
+                return ILikePredicate::class
+            }
+        },
+        BETWEEN {
+            override fun predicateClass(): KClass<out Predicate<*, *>> {
+                return BetweenPredicate::class
+            }
+        },
+        IN {
+            override fun predicateClass(): KClass<out Predicate<*, *>> {
+                return InPredicate::class
+            }
+        },
+        NOT {
+            override fun predicateClass(): KClass<out Predicate<*, *>> {
+                return NotPredicate::class
+            }
+        };
 
-        val COMPOUNDS = listOf(AND, OR)
+        abstract fun predicateClass(): KClass<out Predicate<*,*>>
 
-        val LISTS = listOf(BETWEEN, IN)
+        companion object {
 
-        val WILDCARD_SUPPORTED = listOf(REGEX, ILIKE)
+            fun compounds(): List<SqlPredicates>{
+                return listOf(AND, OR)
+            }
 
+            fun lists(): List<SqlPredicates>{
+                return listOf(BETWEEN, IN)
+            }
+
+            fun wildcardSupported(): List<SqlPredicates>{
+                return listOf(REGEX, ILIKE)
+            }
+
+        }
     }
 
+    /**
+     * Create a Attribute Rule which provides a function for custom rule injection
+     */
+    data class AttributeRule(val rule: (attributeName: String, predicate: Predicate<*, *>) -> Unit) {}
+
+    /**
+     * Create a Attribute Rule which provides a function for custom rule injection
+     */
     fun attributeRule(rule: (attributeName: String, predicate: Predicate<*, *>) -> Unit): AttributeRule {
         return AttributeRule(rule)
     }
 
-    data class AttributeRule(val rule: (attributeName: String, predicate: Predicate<*, *>) -> Unit) {
-
-    }
-
-    object CommonRules {
-        val noArrayOrPropertyDotAccessors = attributeRule { attributeName, predicate ->
-            require(!attributeName.contains(AccessorRegexes.PROPERTY_DOT_ACCESSOR_REGEX), lazyMessage = { "Property Dot Accessors are not supported" })
-            require(!attributeName.contains(AccessorRegexes.ARRAY_ACCESSOR_REGEX), lazyMessage = { "Array Accessors are not supported." })
-        }
-    }
-
+    /**
+     * String processing of SqlPredicate:
+     */
     fun processSqlStructure(sqlPredicate: SqlPredicate) {
         val predicateString = sqlPredicate.toString()
 
-        require(predicateString.length <= StructureRules.maxSqlStringLengh) {
-            "Query is longer than max ${StructureRules.maxSqlStringLengh} character length."
+        require(predicateString.length <= StructureRules.maxSqlStringLength) {
+            "Query is longer than max ${StructureRules.maxSqlStringLength} character length."
         }
 
     }
@@ -91,10 +140,10 @@ object SqlPredicateRules {
         when (predicate) {
             is AndPredicate -> {
                 prohibitPredicates?.let {
-                    require(!it.contains(predicate::class), lazyMessage = { "Not a supported query syntax" })
+                    require(!it.contains(predicate::class), lazyMessage = { "`AND` is not a supported query syntax" })
                 }
                 acceptedPredicates?.let {
-                    require(it.contains(predicate::class), lazyMessage = { "Not a supported query syntax" })
+                    require(it.contains(predicate::class), lazyMessage = { "`AND` is not a supported query syntax" })
                 }
 
                 predicate.getPredicates<Any, Any>().forEach {
@@ -104,10 +153,10 @@ object SqlPredicateRules {
             }
             is OrPredicate -> {
                 prohibitPredicates?.let {
-                    require(!it.contains(predicate::class), lazyMessage = { "Not a supported query syntax" })
+                    require(!it.contains(predicate::class), lazyMessage = { "`OR` is not a supported query syntax" })
                 }
                 acceptedPredicates?.let {
-                    require(it.contains(predicate::class), lazyMessage = { "Not a supported query syntax" })
+                    require(it.contains(predicate::class), lazyMessage = { "`OR` is not a supported query syntax" })
                 }
 
                 predicate.getPredicates<Any, Any>().forEach {
@@ -116,13 +165,13 @@ object SqlPredicateRules {
             }
             is EqualPredicate -> {
                 prohibitPredicates?.let {
-                    require(!it.contains(predicate::class), lazyMessage = { "Not a supported query syntax" })
+                    require(!it.contains(predicate::class), lazyMessage = { "Equality is not a supported query syntax" })
                 }
                 prohibitAttributes?.let {
                     require(!it.contains(predicate.attribute), lazyMessage = { "${predicate.attribute} is not supported query attribute" })
                 }
                 acceptedPredicates?.let {
-                    require(it.contains(predicate::class), lazyMessage = { "Not a supported query syntax" })
+                    require(it.contains(predicate::class), lazyMessage = { "Equality is not a supported query syntax" })
                 }
                 acceptedAttributes?.let {
                     require(it.contains(predicate.attribute), lazyMessage = { "${predicate.attribute} is not supported query attribute" })
@@ -135,18 +184,18 @@ object SqlPredicateRules {
             }
             is NotEqualPredicate -> {
                 prohibitPredicates?.let {
-                    require(!it.contains(predicate::class), lazyMessage = { "Not a supported query syntax" })
+                    require(!it.contains(predicate::class), lazyMessage = { "Negated Equality is not a supported query syntax" })
                 }
                 prohibitAttributes?.let {
                     val attribute = predicate.getAttributeNameValueWithReflection()
-                    require(!it.contains(attribute), lazyMessage = { "${attribute} is not supported query attribute" })
+                    require(!it.contains(attribute), lazyMessage = { "$attribute is not supported query attribute" })
                 }
                 acceptedPredicates?.let {
-                    require(it.contains(predicate::class), lazyMessage = { "Not a supported query syntax" })
+                    require(it.contains(predicate::class), lazyMessage = { "Negated Equality is not a supported query syntax" })
                 }
                 acceptedAttributes?.let {
                     val attribute = predicate.getAttributeNameValueWithReflection()
-                    require(it.contains(attribute), lazyMessage = { "${attribute} is not supported query attribute" })
+                    require(it.contains(attribute), lazyMessage = { "$attribute is not supported query attribute" })
                 }
                 attributeCustomRules?.let { rules ->
                     val attribute = predicate.getAttributeNameValueWithReflection()
@@ -157,13 +206,13 @@ object SqlPredicateRules {
             }
             is GreaterLessPredicate -> {
                 prohibitPredicates?.let {
-                    require(!it.contains(predicate::class), lazyMessage = { "Not a supported query syntax" })
+                    require(!it.contains(predicate::class), lazyMessage = { "Comparison is not a supported query syntax" })
                 }
                 prohibitAttributes?.let {
                     require(!it.contains(predicate.attribute), lazyMessage = { "${predicate.attribute} is not supported query attribute" })
                 }
                 acceptedPredicates?.let {
-                    require(it.contains(predicate::class), lazyMessage = { "Not a supported query syntax" })
+                    require(it.contains(predicate::class), lazyMessage = { "Comparison is not a supported query syntax" })
                 }
                 acceptedAttributes?.let {
                     require(it.contains(predicate.attribute), lazyMessage = { "${predicate.attribute} is not supported query attribute" })
@@ -176,18 +225,18 @@ object SqlPredicateRules {
             }
             is RegexPredicate -> {
                 prohibitPredicates?.let {
-                    require(!it.contains(predicate::class), lazyMessage = { "Not a supported query syntax" })
+                    require(!it.contains(predicate::class), lazyMessage = { "`REGEX` is not a supported query syntax" })
                 }
                 prohibitAttributes?.let {
                     val attribute = predicate.getAttributeNameValueWithReflection()
-                    require(!it.contains(attribute), lazyMessage = { "${attribute} is not supported query attribute" })
+                    require(!it.contains(attribute), lazyMessage = { "$attribute is not supported query attribute" })
                 }
                 acceptedPredicates?.let {
-                    require(it.contains(predicate::class), lazyMessage = { "Not a supported query syntax" })
+                    require(it.contains(predicate::class), lazyMessage = { "`REGEX` is not a supported query syntax" })
                 }
                 acceptedAttributes?.let {
                     val attribute = predicate.getAttributeNameValueWithReflection()
-                    require(it.contains(attribute), lazyMessage = { "${attribute} is not supported query attribute" })
+                    require(it.contains(attribute), lazyMessage = { "$attribute is not supported query attribute" })
                 }
                 attributeCustomRules?.let { rules ->
                     rules.forEach { rule ->
@@ -198,18 +247,18 @@ object SqlPredicateRules {
             }
             is LikePredicate -> {
                 prohibitPredicates?.let {
-                    require(!it.contains(predicate::class), lazyMessage = { "Not a supported query syntax" })
+                    require(!it.contains(predicate::class), lazyMessage = { "`LIKE` is not a supported query syntax" })
                 }
                 prohibitAttributes?.let {
                     val attribute = predicate.getAttributeNameValueWithReflection()
-                    require(!it.contains(attribute), lazyMessage = { "${attribute} is not supported query attribute" })
+                    require(!it.contains(attribute), lazyMessage = { "$attribute is not supported query attribute" })
                 }
                 acceptedPredicates?.let {
-                    require(it.contains(predicate::class), lazyMessage = { "Not a supported query syntax" })
+                    require(it.contains(predicate::class), lazyMessage = { "`LIKE` is not a supported query syntax" })
                 }
                 acceptedAttributes?.let {
                     val attribute = predicate.getAttributeNameValueWithReflection()
-                    require(it.contains(attribute), lazyMessage = { "${attribute} is not supported query attribute" })
+                    require(it.contains(attribute), lazyMessage = { "$attribute is not supported query attribute" })
                 }
                 attributeCustomRules?.let { rules ->
                     val attribute = predicate.getAttributeNameValueWithReflection()
@@ -220,14 +269,14 @@ object SqlPredicateRules {
             }
             is ILikePredicate -> {
                 prohibitPredicates?.let {
-                    require(!it.contains(predicate::class), lazyMessage = { "Not a supported query syntax" })
+                    require(!it.contains(predicate::class), lazyMessage = { "`ILIKE` is not a supported query syntax" })
                 }
                 prohibitAttributes?.let {
                     val attribute = predicate.getAttributeNameValueWithReflection()
-                    require(!it.contains(attribute), lazyMessage = { "${attribute} is not supported query attribute" })
+                    require(!it.contains(attribute), lazyMessage = { "$attribute is not supported query attribute" })
                 }
                 acceptedPredicates?.let {
-                    require(it.contains(predicate::class), lazyMessage = { "Not a supported query syntax" })
+                    require(it.contains(predicate::class), lazyMessage = { "`ILIKE` is not a supported query syntax" })
                 }
                 acceptedAttributes?.let {
                     val attribute = predicate.getAttributeNameValueWithReflection()
@@ -242,13 +291,13 @@ object SqlPredicateRules {
             }
             is BetweenPredicate -> {
                 prohibitPredicates?.let {
-                    require(!it.contains(predicate::class), lazyMessage = { "Not a supported query syntax" })
+                    require(!it.contains(predicate::class), lazyMessage = { "`BETWEEN` is not a supported query syntax" })
                 }
                 prohibitAttributes?.let {
                     require(!it.contains(predicate.attribute), lazyMessage = { "${predicate.attribute} is not supported query attribute" })
                 }
                 acceptedPredicates?.let {
-                    require(it.contains(predicate::class), lazyMessage = { "Not a supported query syntax" })
+                    require(it.contains(predicate::class), lazyMessage = { "`BETWEEN` is not a supported query syntax" })
                 }
                 acceptedAttributes?.let {
                     require(it.contains(predicate.attribute), lazyMessage = { "${predicate.attribute} is not supported query attribute" })
@@ -261,18 +310,18 @@ object SqlPredicateRules {
             }
             is InPredicate -> {
                 prohibitPredicates?.let {
-                    require(!it.contains(predicate::class), lazyMessage = { "Not a supported query syntax" })
+                    require(!it.contains(predicate::class), lazyMessage = { "`IN` is not a supported query syntax" })
                 }
                 prohibitAttributes?.let {
                     val attribute = predicate.getAttributeNameValueWithReflection()
-                    require(!it.contains(attribute), lazyMessage = { "${attribute} is not supported query attribute" })
+                    require(!it.contains(attribute), lazyMessage = { "$attribute is not supported query attribute" })
                 }
                 acceptedPredicates?.let {
-                    require(it.contains(predicate::class), lazyMessage = { "Not a supported query syntax" })
+                    require(it.contains(predicate::class), lazyMessage = { "`IN` is not a supported query syntax" })
                 }
                 acceptedAttributes?.let {
                     val attribute = predicate.getAttributeNameValueWithReflection()
-                    require(it.contains(attribute), lazyMessage = { "${attribute} is not supported query attribute" })
+                    require(it.contains(attribute), lazyMessage = { "$attribute is not supported query attribute" })
                 }
                 attributeCustomRules?.let { rules ->
                     val attribute = predicate.getAttributeNameValueWithReflection()
@@ -284,10 +333,10 @@ object SqlPredicateRules {
             is NotPredicate -> {
                 val subPredicate = predicate.predicate
                 prohibitPredicates?.let {
-                    require(!it.contains(predicate::class), lazyMessage = { "Not a supported query syntax" })
+                    require(!it.contains(predicate::class), lazyMessage = { "`NOT` is not a supported query syntax" })
                 }
                 acceptedPredicates?.let {
-                    require(it.contains(predicate::class), lazyMessage = { "Not a supported query syntax" })
+                    require(it.contains(predicate::class), lazyMessage = { "`NOT` is not a supported query syntax" })
                 }
                 process(subPredicate, acceptedAttributes, acceptedPredicates, prohibitAttributes, prohibitPredicates, attributeCustomRules)
             }
@@ -302,5 +351,40 @@ object SqlPredicateRules {
         attribute.isAccessible = true
 
         return attribute.get(this)
+    }
+
+
+    object CommonRules {
+
+        val noPropertyDotAccessors = attributeRule { attributeName, predicate ->
+            require(!attributeName.contains(Regex(AccessorRegexes.PROPERTY_DOT_ACCESSOR_REGEX))) {
+                "Property Dot Accessors are not supported"
+            }
+        }
+
+        val noThisKeyword = attributeRule{ attributeName, predicate ->
+            require(!attributeName.startsWith(Keywords.THIS_KEYWORD)){
+                "`this` keyword is not supported."
+            }
+        }
+
+        val noEntryKeyKeyword = attributeRule{ attributeName, predicate ->
+            require(!attributeName.contains(Keywords.ENTRY_KEY_ATTRIBUTE_KEYWORD)){
+                "`__key` keyword is not supported."
+            }
+        }
+
+        val noArrayAnyAccessor = attributeRule { attributeName, predicate ->
+            require(!attributeName.contains(Keywords.ANY_KEYWORD)) {
+                "Array `any` Accessors is not supported."
+            }
+        }
+
+        val noArrayAccessors = attributeRule { attributeName, predicate ->
+            require(!attributeName.contains(Regex(AccessorRegexes.ARRAY_ACCESSOR_REGEX))) {
+                "Array Accessors are not supported."
+            }
+        }
+
     }
 }

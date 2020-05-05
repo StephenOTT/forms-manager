@@ -14,6 +14,11 @@ class PagingUtils {
 
     companion object {
 
+        /**
+         * Create Comparators list based on a Pageable.
+         * The BeanDescription is from Jackson's BeanDescription allows the connections of the json property names to the java class property names.
+         * example: `mapper.beanDescription<FormSchemaEntity>()`.
+         */
         fun <ID: Any, E: Any> createPagingPredicateComparators(entityBeanDescription: BeanDescription, pageable: Pageable): List<ComparatorEx<MutableMap.MutableEntry<ID, E>>>{
             return if (pageable.isSorted){
                 return pageable.sort.orderBy.map { sortOrder ->
@@ -64,6 +69,10 @@ class PagingUtils {
 
         }
 
+        /**
+         * Create a PagingPredicate
+         * Currently only the first comparator will be used.
+         */
         fun <ID: Any, E: Any> createPagingPredicate(filter: Predicate<ID, E>, comparators: List<ComparatorEx<MutableMap.MutableEntry<ID, E>>>, pageSize: Int, page: Int = 0): PagingPredicate<ID, E>{
             val predicate: PagingPredicate<ID, E> = if (comparators.isEmpty()){
                 Predicates.pagingPredicate(filter, pageSize)

@@ -47,6 +47,7 @@ class CustomAuthenticationProvider(
     }
 
     override fun authenticate(request: HttpRequest<*>, authenticationRequest: AuthenticationRequest<*, *>): Publisher<AuthenticationResponse> {
+
         val identity = authenticationRequest.identity.toString()
 
         //@TODO refactor this with a new UsernamePasswordToken that accepts a Tenant.  Must also refactor the UserDetails class for Micronaut, and the default Micronaut security controller for /login

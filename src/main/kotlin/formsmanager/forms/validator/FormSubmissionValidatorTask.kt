@@ -11,7 +11,7 @@ class FormSubmissionValidatorTask(
         @Parameter val formSubmission: FormSubmission // Must be public to ensure that jackson can read th
 ): Task<ValidationResponse>(){
 
-    @Inject
+    @Inject @Transient
     private lateinit var formService: FormService
 
     override fun call(): ValidationResponse {

@@ -4,6 +4,7 @@ import com.hazelcast.core.HazelcastInstance
 import com.hazelcast.core.HazelcastInstanceAware
 import formsmanager.core.hazelcast.context.InjectAware
 import java.util.concurrent.Callable
+import javax.inject.Inject
 
 /**
  * Tasks for execution that have a return (could also be a Unit return).
@@ -12,7 +13,7 @@ import java.util.concurrent.Callable
 @InjectAware
 abstract class Task<R> : Callable<R>, HazelcastInstanceAware{
 
-    @Transient
+    @Transient @Inject
     private lateinit var hazelcast: HazelcastInstance
 
     override fun setHazelcastInstance(hazelcastInstance: HazelcastInstance) {
@@ -28,7 +29,7 @@ abstract class Task<R> : Callable<R>, HazelcastInstanceAware{
 @InjectAware
 abstract class TaskWithoutReturn : Runnable, HazelcastInstanceAware{
 
-    @Transient
+    @Transient @Inject
     private lateinit var hazelcast: HazelcastInstance
 
     override fun setHazelcastInstance(hazelcastInstance: HazelcastInstance) {
