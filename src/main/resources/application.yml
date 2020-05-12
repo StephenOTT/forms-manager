@@ -70,7 +70,7 @@ myapp:
       - name: SUPER_ADMIN_ROLE
         tenant: admin-tenant
         permissions:
-          - g"tenants:*"
+          - "tenants:*"
           - "roles:*"
           - "groups:*"
           - "users:*"
