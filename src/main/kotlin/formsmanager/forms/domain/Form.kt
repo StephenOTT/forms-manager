@@ -1,17 +1,30 @@
 package formsmanager.forms.domain
 
+import com.hazelcast.internal.util.UuidUtil
 import formsmanager.core.*
 import formsmanager.core.hazelcast.map.CrudableObject
-import formsmanager.forms.FormMapKey
-import formsmanager.forms.respository.FormEntityWrapper
+import formsmanager.core.hazelcast.map.CrudableObjectId
+import formsmanager.forms.respository.FormEntity
+import formsmanager.tenants.domain.TenantId
 import io.swagger.v3.oas.annotations.media.Schema
 import java.time.Instant
 import java.util.*
 
-@Schema
-data class FormEntity(
+data class FormId(val value: UUID): CrudableObjectId<FormId> {
+    override fun toMapKey(): String {
+        return value.toString()
+    }
 
-        override val internalId: UUID = UUID.randomUUID(),
+    override fun compareTo(other: FormId): Int {
+        return value.compareTo(other.value)
+    }
+}
+
+
+@Schema
+data class Form(
+
+        override val id: FormId,
 
         override val ol: Long = 0,
 
@@ -19,11 +32,11 @@ data class FormEntity(
 
         val description: String? = null,
 
-        val defaultSchema: UUID? = null,
+        val defaultSchema: FormSchemaEntityId? = null,
 
         val type: FormType = FormType.FORMIO,
 
-        override val tenant: UUID,
+        override val tenant: TenantId,
 
         override val createdAt: Instant = Instant.now(),
 
@@ -43,24 +56,21 @@ data class FormEntity(
         EnabledField,
         TenantField,
         CrudableObject {
-    override fun toEntityWrapper(): FormEntityWrapper {
-        return FormEntityWrapper(mapKey(), this::class.qualifiedName!!, this)
+    override fun toEntityWrapper(): FormEntity {
+        return FormEntity(id, this::class.qualifiedName!!, this)
     }
 
-    override fun mapKey(): FormMapKey {
-        return FormMapKey(name, tenant)
-    }
 }
 
 @Schema
-data class FormEntityCreator(
+data class FormCreator(
         var ol: Long = 0,
 
         var name: String,
 
         var description: String? = null,
 
-        var defaultSchema: UUID? = null,
+        var defaultSchema: FormSchemaEntityId? = null,
 
         val data: Map<String, Any?> = mapOf(),
 
@@ -74,14 +84,14 @@ data class FormEntityCreator(
      * Convert to FormEntity.
      * Id is a parameter to allow Creators to be used for existing entities (such as when doing a Update)
      */
-    fun toFormEntity(internalId: UUID = UUID.randomUUID(), tenantMapKey: UUID): FormEntity {
-        return FormEntity(
-                internalId = internalId,
+    fun toForm(id: FormId = FormId(UuidUtil.newSecureUUID()), tenantId: TenantId): Form {
+        return Form(
+                id = id,
                 ol = ol,
                 name = name,
                 description = description,
                 defaultSchema = defaultSchema,
-                tenant = tenantMapKey,
+                tenant = tenantId,
                 data = data,
                 config = config,
                 owner = owner,
@@ -91,14 +101,14 @@ data class FormEntityCreator(
 }
 
 @Schema
-data class FormEntityModifier(
+data class FormModifier(
         var ol: Long = 0,
 
         var name: String,
 
         var description: String? = null,
 
-        var defaultSchema: UUID? = null,
+        var defaultSchema: FormSchemaEntityId? = null,
 
         val data: Map<String, Any?> = mapOf(),
 
@@ -112,9 +122,9 @@ data class FormEntityModifier(
      * Convert to FormEntity.
      * Id is a parameter to allow Creators to be used for existing entities (such as when doing a Update)
      */
-    fun toFormEntity(internalId: UUID, tenantMapKey: UUID): FormEntity {
-        return FormEntity(
-                internalId = internalId,
+    fun toForm(id: FormId, tenantMapKey: TenantId): Form {
+        return Form(
+                id = id,
                 ol = ol,
                 name = name,
                 description = description,

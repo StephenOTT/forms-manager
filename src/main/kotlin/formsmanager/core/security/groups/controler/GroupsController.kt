@@ -1,19 +1,16 @@
 package formsmanager.core.security.groups.controler
 
 import formsmanager.core.exception.NotFoundException
-import formsmanager.core.hazelcast.query.sql.FilterError
-import formsmanager.core.hazelcast.query.sql.FilterException
-import formsmanager.core.hazelcast.query.sql.Filterable
-import formsmanager.core.hazelcast.query.sql.SqlPredicateRules.SqlPredicates
-import formsmanager.core.hazelcast.query.sql.SqlPredicateRules.SqlPredicates.*
-import formsmanager.core.hazelcast.query.sql.SqlPredicateValidationRules
+import formsmanager.core.hazelcast.query.sql.filterable.FilterError
+import formsmanager.core.hazelcast.query.sql.filterable.FilterException
+import formsmanager.core.hazelcast.query.sql.filterable.Filterable
+import formsmanager.core.hazelcast.query.sql.validator.SqlPredicateRules.SqlPredicates.*
 import formsmanager.core.hazelcast.query.sql.binder.FilterableControl
-import formsmanager.core.security.groups.GroupMapKey
-import formsmanager.core.security.groups.domain.GroupEntity
-import formsmanager.core.security.groups.domain.GroupEntityCreator
-import formsmanager.core.security.groups.domain.GroupEntityModifier
+import formsmanager.core.security.groups.domain.Group
+import formsmanager.core.security.groups.domain.GroupCreator
+import formsmanager.core.security.groups.domain.GroupModifier
 import formsmanager.core.security.groups.service.GroupService
-import formsmanager.tenants.TenantMapKey
+import formsmanager.tenants.domain.TenantId
 import io.micronaut.data.model.Pageable
 import io.micronaut.http.HttpRequest
 import io.micronaut.http.HttpResponse
@@ -44,8 +41,8 @@ class GroupsController(
      * @exception NotFoundException Could not find group based on the group name.
      */
     @Get("/{groupName}")
-    fun get(subject: Subject, @QueryValue tenantName: String, @QueryValue groupName: String, filter: Filterable?): Single<HttpResponse<GroupEntity>> {
-        return groupService.getGroup(GroupMapKey(groupName, tenantName), subject)
+    fun get(subject: Subject, @QueryValue tenantName: TenantId, @QueryValue groupName: String, filter: Filterable?): Single<HttpResponse<Group>> {
+        return groupService.getByName(groupName, tenantName, subject)
                 .map {
                     HttpResponse.ok(it)
                 }
@@ -57,8 +54,8 @@ class GroupsController(
      * @return the created Tenant
      */
     @Post("/")
-    fun create(subject: Subject, @QueryValue tenantName: String, @Body groupCreator: GroupEntityCreator): Single<HttpResponse<GroupEntity>> {
-        return groupService.createGroup(groupCreator.toGroupEntity(tenant = TenantMapKey(groupCreator.tenant).toUUID()), subject)
+    fun create(subject: Subject, @QueryValue tenantName: TenantId, @Body groupCreator: GroupCreator): Single<HttpResponse<Group>> {
+        return groupService.create(groupCreator.toGroupEntity(tenant = tenantName), subject)
                 .map {
                     HttpResponse.ok(it)
                 }
@@ -71,10 +68,10 @@ class GroupsController(
      * @return The Group
      */
     @Patch("/{groupName}")
-    fun update(subject: Subject, @QueryValue tenantName: String, @QueryValue groupName: String, @Body groupModifier: GroupEntityModifier): Single<HttpResponse<GroupEntity>> {
-        return groupService.getGroup(GroupMapKey(groupName, tenantName))
+    fun update(subject: Subject, @QueryValue tenantName: TenantId, @QueryValue groupName: String, @Body groupModifier: GroupModifier): Single<HttpResponse<Group>> {
+        return groupService.getByName(groupName, tenantName)
                 .flatMap { ge ->
-                    groupService.updateGroup(groupModifier.toGroupEntity(ge.internalId, ge.name, ge.tenant), subject)
+                    groupService.update(groupModifier.toGroupEntity(ge.id, ge.tenant), subject)
                 }.map {
                     HttpResponse.ok(it)
                 }
@@ -87,7 +84,7 @@ class GroupsController(
                        allowProperties = ["name"],
                        prohibitTypes = [REGEX, BETWEEN, LIKE, ILIKE])
                filter: Filterable,
-               pageable: Pageable): Single<HttpResponse<List<GroupEntity>>> {
+               pageable: Pageable): Single<HttpResponse<List<Group>>> {
 
         return groupService.search(filter.toPredicate(), pageable, subject)
                 .toList().map {

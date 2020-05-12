@@ -1,15 +1,19 @@
 package formsmanager.core.security.shiro.realm
 
 import com.hazelcast.core.HazelcastInstance
-import formsmanager.core.security.shiro.PasswordService
+import formsmanager.core.security.groups.service.GroupService
+import formsmanager.core.security.groups.service.getGroups
+import formsmanager.core.security.roles.domain.Role
+import formsmanager.core.security.roles.service.RoleService
+import formsmanager.core.security.roles.service.getRoles
+import formsmanager.core.security.shiro.credentials.PasswordService
 import formsmanager.core.security.shiro.principal.PrimaryPrincipal
-import formsmanager.users.UserMapKey
+import formsmanager.tenants.domain.TenantId
 import formsmanager.users.service.UserService
 import io.reactivex.schedulers.Schedulers
 import org.apache.shiro.authc.AuthenticationToken
 import org.apache.shiro.authc.SaltedAuthenticationInfo
 import org.apache.shiro.authc.SimpleAuthenticationInfo
-import org.apache.shiro.authc.UsernamePasswordToken
 import org.apache.shiro.authc.credential.HashedCredentialsMatcher
 import org.apache.shiro.authz.AuthorizationInfo
 import org.apache.shiro.authz.SimpleAuthorizationInfo
@@ -22,8 +26,52 @@ import org.apache.shiro.subject.PrincipalCollection
 import org.apache.shiro.subject.SimplePrincipalCollection
 import org.apache.shiro.util.ByteSource
 import org.slf4j.LoggerFactory
-import java.util.*
 import javax.inject.Singleton
+
+data class LoginToken(
+        private val username: String,
+        private val password: CharArray,
+        private val tenant: TenantId
+): AuthenticationToken {
+
+    data class UsernameTenant(
+            val username: String,
+            val tenant: TenantId
+    )
+
+    private val usernameTenant: UsernameTenant = UsernameTenant(username, tenant)
+
+    override fun getCredentials(): CharArray {
+        return password
+    }
+
+    override fun getPrincipal(): UsernameTenant {
+        return usernameTenant
+    }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as LoginToken
+
+        if (username != other.username) return false
+        if (!password.contentEquals(other.password)) return false
+        if (tenant != other.tenant) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = username.hashCode()
+        result = 31 * result + password.contentHashCode()
+        result = 31 * result + tenant.hashCode()
+        return result
+    }
+
+
+}
+
 
 /**
  * Realm for username/password login and for Authorization from the User Service.
@@ -31,7 +79,9 @@ import javax.inject.Singleton
 @Singleton
 class HazelcastRealm(
         private val userService: UserService,
-        cacheManager: HazelcastRealmCacheManager
+        cacheManager: HazelcastRealmCacheManager,
+        private val groupService: GroupService,
+        private val roleService: RoleService
 ) : AuthorizingRealm(cacheManager) {
 
     private val log = LoggerFactory.getLogger(HazelcastRealm::class.java)
@@ -45,7 +95,7 @@ class HazelcastRealm(
                     isStoredCredentialsHexEncoded = false
                 }
 
-        this.setAuthenticationTokenClass(UsernamePasswordToken::class.java)
+        this.setAuthenticationTokenClass(LoginToken::class.java)
 
 
     }
@@ -54,19 +104,19 @@ class HazelcastRealm(
      * Used for Username/Password Login
      */
     override fun doGetAuthenticationInfo(token: AuthenticationToken): SaltedAuthenticationInfo? {
-        if (token is UsernamePasswordToken) {
+        if (token is LoginToken) {
 
             //@TODO refactor this with a new UsernamePasswordToken that accepts a Tenant.  Must also refactor the UserDetails class for Micronaut, and the default Micronaut security controller for /login
-            val email = token.username.substringAfter(":", "")
-            val tenantName = token.username.substringBefore(":", "")
+//            val email = token.username.substringAfter(":", "")
+//            val tenantName = token.username.substringBefore(":", "")
 
             return kotlin.runCatching {
-                userService.getUser(UserMapKey(email, tenantName)).map {
+                userService.getByEmail(token.principal.username, token.principal.tenant).map {
                     //@TODO review if the Base64.decode is actually required.  Saw somewhere there is auto decode/detection based on configuration in the realm.
 
                     //Note: The order of the SimplePrincipalCollection list matters: The first item in the list is considered the "Primary Principal".  See Shiro docs for more info.
                     SimpleAuthenticationInfo(
-                            SimplePrincipalCollection(listOf(PrimaryPrincipal(it.mapKey().toUUID())), "default"),
+                            SimplePrincipalCollection(listOf(PrimaryPrincipal(it.id, it.tenant)), "default"),
                             Base64.decode(it.passwordInfo.passwordHash),
                             ByteSource.Util.bytes(Base64.decode(it.passwordInfo.salt))
                     )
@@ -96,11 +146,18 @@ class HazelcastRealm(
         }
         val primPrincipal: PrimaryPrincipal = (principals.primaryPrincipal as PrimaryPrincipal)
 
-        return userService.getUser(primPrincipal.userMapKey).map { ue ->
-            val authz = SimpleAuthorizationInfo(ue.rolesInfo.roles.map { it.name }.toSet())
+        return userService.get(primPrincipal.userId).map { ue ->
 
-            ue.rolesInfo.roles.forEach {
-                authz.addObjectPermissions(it.permissionStringsToWildcardPermissions())
+            val roles: Set<Role> = ue.groupInfo.groups.getGroups(groupService).subscribeOn(Schedulers.io()).blockingGet().flatMap {
+                it.roles.getRoles(roleService).subscribeOn(Schedulers.io()).blockingGet()
+            }.toSet()
+
+
+            val authz = SimpleAuthorizationInfo()
+
+            roles.forEach {
+                authz.addRole(it.name)
+                authz.addStringPermissions(it.permissions)
             }
             //@TODO add custom permission adding based on users custom permissions not related to roles
 

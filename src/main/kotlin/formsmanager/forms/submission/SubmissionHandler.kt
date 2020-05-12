@@ -1,7 +1,7 @@
 package formsmanager.forms.submission
 
-import formsmanager.forms.domain.FormEntity
-import formsmanager.forms.domain.FormSchemaEntity
+import formsmanager.forms.domain.Form
+import formsmanager.forms.domain.FormSchema
 import formsmanager.forms.service.FormValidationService
 import formsmanager.forms.validator.FormSubmission
 import io.reactivex.Single
@@ -21,7 +21,7 @@ class SubmissionHandler(
     /**
      * Generic Processor
      */
-    override fun process(formSubmission: FormSubmission, formEntity: FormEntity?, formSchemaEntity: FormSchemaEntity?, dryRun: Boolean, subject: Subject?): Single<FormSubmissionResponse> {
+    override fun process(formSubmission: FormSubmission, form: Form?, formSchema: FormSchema?, dryRun: Boolean, subject: Subject?): Single<FormSubmissionResponse> {
         // Where you can fully customize the Form Submission Handling
         return formValidationService.validationFormSubmissionAsTask(formSubmission).map {
             FormSubmissionResponse(it)

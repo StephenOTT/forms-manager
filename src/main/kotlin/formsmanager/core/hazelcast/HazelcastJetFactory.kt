@@ -9,7 +9,7 @@ import com.hazelcast.map.MapStore
 import formsmanager.core.hazelcast.context.MicronautManagedContext
 import formsmanager.core.hazelcast.map.HazelcastCrudRepository
 import formsmanager.core.hazelcast.serialization.SmileByteArraySerializer
-import formsmanager.ifDebugEnabled
+import formsmanager.core.ifDebugEnabled
 import io.micronaut.context.ApplicationContext
 import io.micronaut.context.annotation.Context
 import io.micronaut.context.annotation.Factory

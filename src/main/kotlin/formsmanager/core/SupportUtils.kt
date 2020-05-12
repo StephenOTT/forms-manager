@@ -1,4 +1,4 @@
-package formsmanager
+package formsmanager.core
 
 import org.slf4j.Logger
 

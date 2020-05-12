@@ -1,6 +1,6 @@
 package formsmanager.core.hazelcast.query.sql.binder
 
-import formsmanager.core.hazelcast.query.sql.SqlPredicateRules
+import formsmanager.core.hazelcast.query.sql.validator.SqlPredicateRules
 
 
 /**

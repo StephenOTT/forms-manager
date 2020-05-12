@@ -1,12 +1,12 @@
 package formsmanager.forms.validator
 
 import com.fasterxml.jackson.annotation.JsonInclude
-import formsmanager.forms.domain.FormSchema
+import formsmanager.forms.domain.FormioFormSchema
 import io.swagger.v3.oas.annotations.media.Schema
 
 @Schema
 data class FormSubmission(
-        val schema: FormSchema,
+        val schema: FormioFormSchema,
         val submission: FormSubmissionData)
 
 @Schema

@@ -1,12 +1,11 @@
 package formsmanager.core.security.roles.controler
 
 import formsmanager.core.exception.NotFoundException
-import formsmanager.core.security.roles.RoleMapKey
-import formsmanager.core.security.roles.domain.RoleEntity
-import formsmanager.core.security.roles.domain.RoleEntityCreator
-import formsmanager.core.security.roles.domain.RoleEntityModifier
+import formsmanager.core.security.roles.domain.Role
+import formsmanager.core.security.roles.domain.RoleCreator
+import formsmanager.core.security.roles.domain.RoleModifier
 import formsmanager.core.security.roles.service.RoleService
-import formsmanager.tenants.TenantMapKey
+import formsmanager.tenants.domain.TenantId
 import io.micronaut.http.HttpRequest
 import io.micronaut.http.HttpResponse
 import io.micronaut.http.annotation.*
@@ -37,8 +36,8 @@ class RolesController(
      * @exception NotFoundException Could not find role based on the role name.
      */
     @Get("/{roleName}")
-    fun get(subject: Subject, @QueryValue tenantName: String, @QueryValue roleName: String): Single<HttpResponse<RoleEntity>> {
-        return roleService.get(RoleMapKey(roleName, tenantName), subject)
+    fun get(subject: Subject, @QueryValue tenantName: TenantId, @QueryValue roleName: String): Single<HttpResponse<Role>> {
+        return roleService.getByName(roleName, tenantName, subject)
                 .map {
                     HttpResponse.ok(it)
                 }
@@ -50,8 +49,8 @@ class RolesController(
      * @return the created Tenant
      */
     @Post("/")
-    fun create(subject: Subject, @QueryValue tenantName: String, @Body roleCreator: RoleEntityCreator): Single<HttpResponse<RoleEntity>> {
-        return roleService.create(roleCreator.toRoleEntity(tenant = TenantMapKey(tenantName).toUUID()), subject)
+    fun create(subject: Subject, @QueryValue tenantName: TenantId, @Body roleCreator: RoleCreator): Single<HttpResponse<Role>> {
+        return roleService.create(roleCreator.toRole(tenant = tenantName))
                 .map {
                     HttpResponse.ok(it)
                 }
@@ -64,10 +63,10 @@ class RolesController(
      * @return The Role
      */
     @Patch("/{roleName}")
-    fun update(subject: Subject, @QueryValue tenantName: String, @QueryValue roleName: String, @Body roleModifier: RoleEntityModifier): Single<HttpResponse<RoleEntity>> {
-        return roleService.get(RoleMapKey(roleName, tenantName))
+    fun update(subject: Subject, @QueryValue tenantName: TenantId, @QueryValue roleName: String, @Body roleModifier: RoleModifier): Single<HttpResponse<Role>> {
+        return roleService.getByName(roleName, tenantName, subject)
                 .flatMap { re ->
-                    roleService.update(roleModifier.toRoleEntity(re.internalId, re.name, re.tenant), subject)
+                    roleService.update(roleModifier.toRole(re.id, re.tenant), subject)
                 }.map {
                     HttpResponse.ok(it)
                 }

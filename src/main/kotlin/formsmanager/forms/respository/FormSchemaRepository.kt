@@ -7,17 +7,17 @@ import formsmanager.core.hazelcast.annotation.MapStore
 import formsmanager.core.hazelcast.map.HazelcastCrudRepository
 import formsmanager.core.hazelcast.map.persistence.CrudableMapStoreRepository
 import formsmanager.core.hazelcast.map.persistence.CurdableMapStore
-import formsmanager.core.hazelcast.map.persistence.MapStoreItemWrapperEntity
+import formsmanager.core.hazelcast.map.persistence.MapStoreEntity
 import formsmanager.core.hazelcast.query.PagingUtils.Companion.createPagingPredicate
 import formsmanager.core.hazelcast.query.PagingUtils.Companion.createPagingPredicateComparators
 import formsmanager.core.hazelcast.query.beanDescription
-import formsmanager.forms.FormSchemaMapKey
-import formsmanager.forms.domain.FormSchemaEntity
+import formsmanager.forms.domain.FormId
+import formsmanager.forms.domain.FormSchema
+import formsmanager.forms.domain.FormSchemaEntityId
 import io.micronaut.data.jdbc.annotation.JdbcRepository
 import io.micronaut.data.model.Pageable
 import io.micronaut.data.model.query.builder.sql.Dialect
 import io.reactivex.Flowable
-import java.util.*
 import javax.inject.Singleton
 import javax.persistence.Entity
 
@@ -26,22 +26,22 @@ import javax.persistence.Entity
  * Entity for storage in a IMDG MapStore for FormSchemaEntity
  */
 @Entity
-class FormSchemaEntityWrapper(key: FormSchemaMapKey,
-                              classId: String,
-                              value: FormSchemaEntity) : MapStoreItemWrapperEntity<FormSchemaEntity>(key.toUUID(), classId, value)
+class FormSchemaEntity(key: FormSchemaEntityId,
+                       classId: String,
+                       value: FormSchema) : MapStoreEntity<FormSchema>(key.toMapKey(), classId, value)
 
 /**
  * JDBC Repository for use by the FormSchemas MapStore
  */
 @JdbcRepository(dialect = Dialect.H2)
-interface FormSchemasMapStoreRepository : CrudableMapStoreRepository<FormSchemaEntityWrapper>
+interface FormSchemasMapStoreRepository : CrudableMapStoreRepository<FormSchemaEntity>
 
 /**
  * Provides a MapStore implementation for FormSchemaEntity
  */
 @Singleton
 class FormSchemasMapStore(mapStoreRepository: FormSchemasMapStoreRepository) :
-        CurdableMapStore<FormSchemaEntity, FormSchemaEntityWrapper, FormSchemasMapStoreRepository>(mapStoreRepository)
+        CurdableMapStore<FormSchema, FormSchemaEntity, FormSchemasMapStoreRepository>(mapStoreRepository)
 
 /**
  * Implementation providing a Form Schema IMDG IMap CRUD operations repository.
@@ -52,7 +52,7 @@ class FormSchemaHazelcastRepository(
         hazelcastInstance: HazelcastInstance,
         private val mapper: ObjectMapper
 ) :
-        HazelcastCrudRepository<FormSchemaEntity>(
+        HazelcastCrudRepository<FormSchema>(
                 hazelcastInstance = hazelcastInstance,
                 mapName = MAP_NAME
         ) {
@@ -67,12 +67,12 @@ class FormSchemaHazelcastRepository(
      * @param pageable A Pageable instance that provides paging and sorting instructions.  Defaults value is a pageable that limits to 10 items.
      * @return Flowable of FormSchema for the specified Form Schema
      */
-    fun getSchemasForForm(formMapKey: UUID, pageable: Pageable = Pageable.from(0)): Flowable<FormSchemaEntity> {
+    fun getSchemasForForm(formMapKey: FormId, pageable: Pageable = Pageable.from(0)): Flowable<FormSchema> {
         return Flowable.fromCallable {
             // Gets the jackson BeanDescription for the entity
-            val beanDesc = mapper.beanDescription<FormSchemaEntity>()
+            val beanDesc = mapper.beanDescription<FormSchema>()
 
-            val comparators = createPagingPredicateComparators<UUID, FormSchemaEntity>(beanDesc, pageable)
+            val comparators = createPagingPredicateComparators<String, FormSchema>(beanDesc, pageable)
             createPagingPredicate(
                     Predicates.equal("formId", formMapKey),
                     comparators,

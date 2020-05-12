@@ -1,6 +1,6 @@
 package formsmanager.core.security.rule
 
-import formsmanager.ifDebugEnabled
+import formsmanager.core.ifDebugEnabled
 import formsmanager.core.security.ShiroMicronautSecurityService
 import formsmanager.core.security.annotation.RequiresAuthenticatedOrGuest
 import io.micronaut.http.HttpRequest

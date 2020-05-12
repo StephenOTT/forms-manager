@@ -2,7 +2,7 @@ package formsmanager.core.hazelcast.context
 
 import com.hazelcast.core.ManagedContext
 import com.hazelcast.executor.impl.RunnableAdapter
-import formsmanager.ifDebugEnabled
+import formsmanager.core.ifDebugEnabled
 import io.micronaut.context.ApplicationContext
 import org.slf4j.LoggerFactory
 import javax.inject.Singleton

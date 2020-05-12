@@ -1,16 +1,29 @@
 package formsmanager.tenants.service
 
-import formsmanager.core.security.checkAuthorization
-import formsmanager.tenants.TenantMapKey
-import formsmanager.tenants.domain.TenantEntity
+import com.hazelcast.projection.Projections
+import com.hazelcast.query.Predicate
+import com.hazelcast.query.Predicates
+import formsmanager.core.security.shiro.checkAuthorization
+import formsmanager.tenants.domain.Tenant
+import formsmanager.tenants.domain.TenantId
 import formsmanager.tenants.repository.TenantHazelcastRepository
 import io.reactivex.Single
-import org.apache.shiro.authz.permission.WildcardPermission
+import io.reactivex.schedulers.Schedulers
 import org.apache.shiro.subject.Subject
 import org.slf4j.LoggerFactory
 import java.time.Instant
-import java.util.*
 import javax.inject.Singleton
+
+
+fun Set<TenantId>.getTenants(service: TenantService, subject: Subject? = null): Single<Set<Tenant>> {
+    return service.get(this, subject).map {
+        it.toSet()
+    }
+}
+
+fun TenantId.getTenant(service: TenantService, subject: Subject? = null): Single<Tenant> {
+    return service.get(this, subject)
+}
 
 
 @Singleton
@@ -24,13 +37,13 @@ class TenantService(
 
     /**
      * Create/insert a Tenant
-     * @param tenantEntity Tenant to be created/inserted
+     * @param tenant Tenant to be created/inserted
      * @param subject optional Shiro Subject.  If Subject is provided, then security validation will occur.
      */
-    fun createTenant(tenantEntity: TenantEntity, subject: Subject? = null): Single<TenantEntity> {
+    fun create(tenant: Tenant, subject: Subject? = null): Single<Tenant> {
         return subject.checkAuthorization("tenants:create")
                 .flatMap {
-                    tenantHazelcastRepository.create(tenantEntity)
+                    tenantHazelcastRepository.create(tenant)
                 }
     }
 
@@ -38,29 +51,50 @@ class TenantService(
      * Get/find a Tenant
      * @param tenantId Tenant ID
      */
-    fun getTenant(tenantMapKey: TenantMapKey, subject: Subject? = null): Single<TenantEntity> {
-        return tenantHazelcastRepository.get(tenantMapKey.toUUID()).map { te ->
-            subject?.let {
-                subject.checkPermission("tenants:read:${te.internalId}")
+    fun get(id: TenantId, subject: Subject? = null): Single<Tenant> {
+        return tenantHazelcastRepository.get(id).flatMap { te ->
+            subject.checkAuthorization("tenants:read:${te.id}").map {
+                te
             }
-            te
+        }
+    }
+
+    fun get(ids: Set<TenantId>, subject: Subject? = null): Single<List<Tenant>> {
+        return tenantHazelcastRepository.get(ids).map { items ->
+            items.forEach { item ->
+                subject.checkAuthorization("tenants:read:${item.id}")
+                        .subscribeOn(Schedulers.io()).blockingGet()
+            }
+            items
+        }
+    }
+
+
+    fun getByName(tenantName: String, subject: Subject? = null): Single<Tenant> {
+        return tenantHazelcastRepository.get(Predicate {
+            it.value.name == tenantName
+        }).flatMap { tenant ->
+            subject.checkAuthorization("tenants:read:${tenant.id}").map {
+                tenant
+            }
         }
     }
 
     /**
-     * Checks if tenant exists.
-     * Optional mustExist parameter that will throw a IllegalArgumentException if the tenant does not exist.
-     * @exception IllegalArgumentException if mustExist is set to true, and the request tenant does not exist
+     * Optimized function to get the TenantId from a Tenant Name.
+     * Primarily used for HTTP tenant exist checks which is a common request
+     * @exception NoSuchElementException if tenant name could not be found
      */
-    fun tenantExists(tenantMapKey: TenantMapKey, mustExist: Boolean = false): Single<Boolean> {
-        return tenantExists(tenantMapKey.toUUID(), mustExist)
+    fun getTenantIdByTenantName(tenantName: String): Single<TenantId>{
+        return Single.fromCallable {
+            tenantHazelcastRepository.mapService.project(
+                    Projections.singleAttribute<MutableMap.MutableEntry<String, Tenant>, TenantId>("id"),
+                    Predicates.equal("name", tenantName)
+            ).single()
+        }
     }
 
-    fun tenantExists(tenantName: String, mustExist: Boolean = false): Single<Boolean> {
-        return tenantExists(TenantMapKey(tenantName), mustExist)
-    }
-
-    fun tenantExists(tenantMapKey: UUID, mustExist: Boolean = false): Single<Boolean> {
+    fun exists(tenantMapKey: TenantId, mustExist: Boolean = false): Single<Boolean> {
         return tenantHazelcastRepository.exists(tenantMapKey).map {
             if (mustExist) {
                 require(it, lazyMessage = { "Tenant does not exist" })
@@ -72,20 +106,19 @@ class TenantService(
 
     /**
      * Update/overwrite tenant
-     * @param tenantEntity Tenant to be updated/overwritten
+     * @param tenant Tenant to be updated/overwritten
      */
-    fun updateTenant(tenantEntity: TenantEntity, subject: Subject? = null): Single<TenantEntity> {
-        return tenantHazelcastRepository.update(tenantEntity) { originalItem, newItem ->
+    fun update(tenant: Tenant, subject: Subject? = null): Single<Tenant> {
+        return tenantHazelcastRepository.update(tenant) { originalItem, newItem ->
             //Update logic for automated fields @TODO consider automation with annotations
 
-            subject?.let {
-                // @TODO review if this should be a perm based on the tenantID.
-                subject.checkPermission("tenants:update:${originalItem.internalId}")
-            }
+            // @TODO review if this should be a perm based on the tenantID.
+            subject.checkAuthorization("tenants:update:${originalItem.id}")
+                    .subscribeOn(Schedulers.io()).blockingGet()
 
             newItem.copy(
                     ol = originalItem.ol + 1,
-                    internalId = originalItem.internalId,
+                    id = originalItem.id,
                     createdAt = originalItem.createdAt,
                     updatedAt = Instant.now()
             )

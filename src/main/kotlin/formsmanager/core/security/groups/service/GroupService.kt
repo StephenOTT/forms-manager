@@ -6,23 +6,35 @@ import com.hazelcast.query.Predicates
 import formsmanager.core.hazelcast.query.PagingUtils
 import formsmanager.core.hazelcast.query.beanDescription
 import formsmanager.core.hazelcast.query.predicate.SecurityPredicate
-import formsmanager.core.security.groups.GroupMapKey
-import formsmanager.core.security.groups.domain.GroupEntity
+import formsmanager.core.security.groups.domain.Group
+import formsmanager.core.security.groups.domain.GroupId
 import formsmanager.core.security.groups.repository.GroupHazelcastRepository
-import formsmanager.forms.domain.FormSchemaEntity
+import formsmanager.core.security.shiro.checkAuthorization
+import formsmanager.forms.domain.FormSchema
+import formsmanager.tenants.domain.TenantId
 import io.micronaut.context.ApplicationContext
-import io.micronaut.context.BeanContext
-import io.micronaut.core.beans.BeanIntrospector
 import io.micronaut.data.model.Pageable
 import io.reactivex.Flowable
 import io.reactivex.Single
+import io.reactivex.schedulers.Schedulers
 import org.apache.shiro.authz.annotation.Logical
 import org.apache.shiro.authz.permission.WildcardPermission
 import org.apache.shiro.subject.Subject
 import org.slf4j.LoggerFactory
 import java.time.Instant
-import java.util.*
 import javax.inject.Singleton
+
+
+fun Set<GroupId>.getGroups(groupService: GroupService, subject: Subject? = null): Single<Set<Group>> {
+    return groupService.get(this, subject).map {
+        it.toSet()
+    }
+}
+
+fun GroupId.getGroup(groupService: GroupService, subject: Subject? = null): Single<Group> {
+    return groupService.get(this, subject)
+}
+
 
 /**
  * Primary Entry point for working with Groups
@@ -41,54 +53,61 @@ class GroupService(
 
     /**
      * Create/insert a Group
-     * @param groupEntity Group to be created/inserted
+     * @param item Group to be created/inserted
      * @param subject optional Shiro Subject.  If Subject is provided, then security validation will occur.
      */
-    fun createGroup(groupEntity: GroupEntity, subject: Subject? = null): Single<GroupEntity> {
-        return Single.fromCallable {
-            subject?.let {
-                subject.checkPermission("groups:create:${groupEntity.tenant}")
-            }
-        }.flatMap {
-            groupHazelcastRepository.create(groupEntity)
+    fun create(item: Group, subject: Subject? = null): Single<Group> {
+        return subject.checkAuthorization("groups:create:${item.tenant}").flatMap {
+            groupHazelcastRepository.create(item)
         }
     }
 
-    /**
-     * Get/find a Group
-     * @param groupId Group ID
-     */
-    fun getGroup(groupId: GroupMapKey, subject: Subject? = null): Single<GroupEntity> {
-        return groupHazelcastRepository.get(groupId.toUUID()).map { g ->
-            subject?.let {
-                subject.checkPermission("groups:read:${g.tenant}")
+    fun get(id: GroupId, subject: Subject? = null): Single<Group> {
+        return groupHazelcastRepository.get(id).map { g ->
+            subject.checkAuthorization("groups:read:${g.tenant}").map {
+                g
             }
             g
         }
     }
 
-    fun groupExists(groupMapKey: GroupMapKey): Single<Boolean> {
-        return groupExists(groupMapKey.toUUID())
+    fun getByName(name: String, tenantId: TenantId, subject: Subject? = null): Single<Group>{
+        return groupHazelcastRepository.get(Predicate {
+            it.value.tenant == tenantId && it.value.name == name
+        })
     }
 
-    fun groupExists(groupMapKey: UUID): Single<Boolean> {
-        return groupHazelcastRepository.exists(groupMapKey)
+    /**
+     * Gets multiple groups by group MapKeys.
+     * If subject is provided, then subject must have permissions to read all provided group mapkeys.
+     */
+    fun get(idSet: Set<GroupId>, subject: Subject? = null): Single<List<Group>> {
+        return groupHazelcastRepository.get(idSet).map { groups ->
+            groups.forEach { group ->
+                subject.checkAuthorization("groups:read:${group.tenant}")
+                        .subscribeOn(Schedulers.io()).blockingGet()
+            }
+            groups
+        }
+    }
+
+    fun exists(id: GroupId): Single<Boolean> {
+        return groupHazelcastRepository.exists(id)
     }
 
     /**
      * Update/overwrite Group
-     * @param groupEntity Group to be updated/overwritten
+     * @param item Group to be updated/overwritten
      */
-    fun updateGroup(groupEntity: GroupEntity, subject: Subject? = null): Single<GroupEntity> {
-        return groupHazelcastRepository.update(groupEntity) { originalItem, newItem ->
+    fun update(item: Group, subject: Subject? = null): Single<Group> {
+        return groupHazelcastRepository.update(item) { originalItem, newItem ->
             //Update logic for automated fields @TODO consider automation with annotations
-            subject?.let {
-                subject.checkPermission("groups:update:${originalItem.tenant}")
-            }
+            subject.checkAuthorization("groups:update:${originalItem.tenant}")
+                    .subscribeOn(Schedulers.io()).blockingGet()
 
             newItem.copy(
                     ol = originalItem.ol + 1,
-                    internalId = originalItem.internalId,
+                    id = originalItem.id,
                     tenant = originalItem.tenant,
                     createdAt = originalItem.createdAt,
                     updatedAt = Instant.now()
@@ -100,13 +119,13 @@ class GroupService(
      * See SqlPredicate for query capabilities.
      * For all results see Predicates.AlwaysTrue().
      */
-    fun search(predicate: Predicate<UUID, GroupEntity>, pageable: Pageable, subject: Subject?): Flowable<GroupEntity> {
+    fun search(predicate: Predicate<String, Group>, pageable: Pageable, subject: Subject?): Flowable<Group> {
 
         return Flowable.fromCallable {
 
-            val finalPred: Predicate<UUID, GroupEntity> =
+            val finalPred: Predicate<String, Group> =
                     if (subject != null) {
-                        val secPred = SecurityPredicate<GroupEntity>(subject, Logical.AND) {
+                        val secPred = SecurityPredicate<Group>(subject, Logical.AND) {
                             listOf(
                                     WildcardPermission("groups:read:${it.tenant}")
                             )
@@ -123,10 +142,10 @@ class GroupService(
                     }
 
             // Gets the jackson BeanDescription for the entity
-            val beanDesc = mapper.beanDescription<FormSchemaEntity>()
+            val beanDesc = mapper.beanDescription<FormSchema>()
 
             // Build comparators lists
-            val comparators = PagingUtils.createPagingPredicateComparators<UUID, GroupEntity>(beanDesc, pageable)
+            val comparators = PagingUtils.createPagingPredicateComparators<String, Group>(beanDesc, pageable)
 
             PagingUtils.createPagingPredicate(
                     finalPred,

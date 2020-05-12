@@ -1,6 +1,6 @@
 package formsmanager.core.security.jwt
 
-import formsmanager.ifDebugEnabled
+import formsmanager.core.ifDebugEnabled
 import formsmanager.core.security.ShiroMicronautSecurityService
 import formsmanager.core.security.shiro.jwt.JwtToken
 import io.micronaut.context.annotation.Replaces
@@ -8,7 +8,6 @@ import io.micronaut.context.event.ApplicationEventPublisher
 import io.micronaut.http.HttpRequest
 import io.micronaut.security.authentication.Authentication
 import io.micronaut.security.token.TokenAuthenticationFetcher
-import io.micronaut.security.token.jwt.validator.JwtTokenValidator
 import io.micronaut.security.token.reader.TokenResolver
 import io.micronaut.security.token.validator.TokenValidator
 import io.reactivex.Flowable

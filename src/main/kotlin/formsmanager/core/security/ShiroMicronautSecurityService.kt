@@ -1,6 +1,6 @@
 package formsmanager.core.security
 
-import formsmanager.ifDebugEnabled
+import formsmanager.core.ifDebugEnabled
 import io.micronaut.http.HttpRequest
 import io.micronaut.http.context.ServerRequestContext
 import org.apache.shiro.mgt.SecurityManager

@@ -1,9 +1,15 @@
-package formsmanager.core.hazelcast.query.sql
+package formsmanager.core.hazelcast.query.sql.validator
 
 import com.hazelcast.query.Predicate
 import com.hazelcast.query.impl.predicates.SqlPredicate
+import formsmanager.core.hazelcast.query.sql.validator.SqlPredicateRules
 import kotlin.reflect.KClass
 
+/**
+ * Provides SqlPredicate validation based on additional "business rules"
+ * Typical usage is to limit what Predicates and attributes can be used.
+ * Provides a `attributeCustomRules` argument to provide custom rules.
+ */
 fun SqlPredicate.checkPredicateRules(acceptedAttributes: List<String>? = null,
                                      acceptedPredicates: List<KClass<out Predicate<*, *>>>? = null,
                                      prohibitAttributes: List<String>? = null,

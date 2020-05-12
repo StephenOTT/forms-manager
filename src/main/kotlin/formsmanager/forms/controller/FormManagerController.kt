@@ -4,8 +4,6 @@ import formsmanager.core.exception.ErrorMessage
 import formsmanager.core.exception.FormManagerException
 import formsmanager.core.exception.NotFoundException
 import formsmanager.core.hazelcast.query.checkAllowedSortProperties
-import formsmanager.forms.FormMapKey
-import formsmanager.forms.FormSchemaMapKey
 import formsmanager.forms.domain.*
 import formsmanager.forms.service.FormService
 import formsmanager.forms.submission.FormSubmissionResponse
@@ -14,7 +12,7 @@ import formsmanager.forms.validator.FormSubmission
 import formsmanager.forms.validator.FormSubmissionData
 import formsmanager.forms.validator.FormValidationException
 import formsmanager.forms.validator.ValidationResponseInvalid
-import formsmanager.tenants.TenantMapKey
+import formsmanager.tenants.domain.TenantId
 import io.micronaut.data.model.Pageable
 import io.micronaut.http.HttpRequest
 import io.micronaut.http.HttpResponse
@@ -48,10 +46,10 @@ class FormManagerController(
      */
     @Get("/{formName}")
     fun getForm(subject: Subject,
-                @QueryValue tenantName: String,
+                @QueryValue tenantName: TenantId,
                 @QueryValue formName: String
-    ): Single<HttpResponse<FormEntity>> {
-        return formService.getForm(FormMapKey(formName, TenantMapKey(tenantName).toUUID()))
+    ): Single<HttpResponse<Form>> {
+        return formService.getFormByName(formName, tenantName, subject)
                 .map {
                     HttpResponse.ok(it)
                 }
@@ -64,11 +62,11 @@ class FormManagerController(
      */
     @Post("/")
     fun createForm(subject: Subject,
-                   @QueryValue tenantName: String,
-                   @Body form: FormEntityCreator
-    ): Single<HttpResponse<FormEntity>> {
+                   @QueryValue tenantName: TenantId,
+                   @Body form: FormCreator
+    ): Single<HttpResponse<Form>> {
         return formService.createForm(
-                form.toFormEntity(tenantMapKey = TenantMapKey(tenantName).toUUID()),
+                form.toForm(tenantId = tenantName),
                 subject
         ).map {
             HttpResponse.ok(it)
@@ -83,13 +81,13 @@ class FormManagerController(
      */
     @Patch("/{formName}")
     fun updateForm(subject: Subject,
-                   @QueryValue tenantName: String,
+                   @QueryValue tenantName: TenantId,
                    @QueryValue formName: String,
-                   @Body form: FormEntityModifier
-    ): Single<HttpResponse<FormEntity>> {
-        return formService.getForm(FormMapKey(formName, TenantMapKey(tenantName).toUUID()))
+                   @Body form: FormModifier
+    ): Single<HttpResponse<Form>> {
+        return formService.getFormByName(formName, tenantName)
                 .flatMap { fe ->
-                    formService.updateForm(form.toFormEntity(fe.internalId, fe.tenant), subject)
+                    formService.updateForm(form.toForm(fe.id, fe.tenant), subject)
 
                 }.map {
                     HttpResponse.ok(it)
@@ -104,13 +102,13 @@ class FormManagerController(
      */
     @Get("/formName/schema/{schemaUuid}")
     fun getSchema(subject: Subject,
-                  @QueryValue tenantName: String,
+                  @QueryValue tenantName: TenantId,
                   @QueryValue formName: String,
                   @QueryValue schemaUuid: UUID
-    ): Single<HttpResponse<FormSchemaEntity>> {
-        return formService.formExists(FormMapKey(formName, TenantMapKey(tenantName).toUUID()), true)
+    ): Single<HttpResponse<FormSchema>> {
+        return formService.existsByName(formName, tenantName, true)
                 .flatMap {
-                    formService.getSchema(FormSchemaMapKey(schemaUuid), subject)
+                    formService.getSchema(FormSchemaEntityId(schemaUuid))
                 }.map {
                     HttpResponse.ok(it)
                 }
@@ -118,13 +116,13 @@ class FormManagerController(
 
     @Get("/{formName}/schema/{schemaUuid}/render")
     fun getSchemaForRender(subject: Subject,
-                           @QueryValue tenantName: String,
+                           @QueryValue tenantName: TenantId,
                            @QueryValue formName: String,
                            @QueryValue schemaUuid: UUID
-    ): Single<HttpResponse<FormSchema>> {
-        return formService.formExists(FormMapKey(formName, TenantMapKey(tenantName).toUUID()), true)
+    ): Single<HttpResponse<FormioFormSchema>> {
+        return formService.existsByName(formName, tenantName, true)
                 .flatMap {
-                    formService.getSchema(FormSchemaMapKey(schemaUuid), subject)
+                    formService.getSchema(FormSchemaEntityId(schemaUuid))
                 }.map {
                     HttpResponse.ok(it.schema)
                 }
@@ -141,14 +139,13 @@ class FormManagerController(
     @Post("/{formName}/schema{?isDefault}")
     fun createSchema(subject: Subject,
                      @QueryValue formName: String,
-                     @QueryValue tenantName: String,
-                     @Body schemaEntity: FormSchemaEntityCreator,
+                     @QueryValue tenantName: TenantId,
+                     @Body schemaEntity: FormSchemaCreator,
                      @QueryValue isDefault: Boolean?
-    ): Single<HttpResponse<FormSchemaEntity>> {
-        val formMapKey = FormMapKey(formName, TenantMapKey(tenantName).toUUID())
-        return formService.formExists(formMapKey, true)
+    ): Single<HttpResponse<FormSchema>> {
+        return formService.getFormIdByName(formName, tenantName)
                 .flatMap {
-                    formService.createSchema(schemaEntity.toFormSchemaEntity(formMapKey = formMapKey.toUUID()), isDefault
+                    formService.createSchema(schemaEntity.toFormSchema(formMapKey = it), isDefault
                             ?: false, subject)
                 }
                 .map {
@@ -165,15 +162,15 @@ class FormManagerController(
      */
     @Patch("/{formName}/schema/{schemaUuid}{?isDefault}")
     fun updateSchema(subject: Subject,
-                     @QueryValue tenantName: String,
+                     @QueryValue tenantName: TenantId,
                      @QueryValue formName: String,
                      @QueryValue schemaUuid: UUID,
-                     @Body formSchema: FormSchemaEntityModifier,
+                     @Body formSchema: FormSchemaModifier,
                      @QueryValue isDefault: Boolean?
-    ): Single<HttpResponse<FormSchemaEntity>> {
-        return formService.getSchema(schemaUuid).flatMap { fse ->
+    ): Single<HttpResponse<FormSchema>> {
+        return formService.getSchema(FormSchemaEntityId(schemaUuid)).flatMap { fse ->
             formService.updateFormSchema(
-                    formSchema.toFormSchemaEntity(fse.internalId, fse.formId),
+                    formSchema.toFormSchema(fse.id, fse.formId),
                     isDefault ?: false,
                     subject
             )
@@ -189,13 +186,14 @@ class FormManagerController(
      */
     @Get("/{formName}/schema")
     fun getFormDefaultSchema(subject: Subject,
-                             @QueryValue tenantName: String,
+                             @QueryValue tenantName: TenantId,
                              @QueryValue formName: String
-    ): Single<HttpResponse<FormSchemaEntity>> {
-        return formService.getDefaultSchema(FormMapKey(formName, TenantMapKey(tenantName).toUUID()).toUUID(), subject)
-                .map {
-                    HttpResponse.ok(it)
-                }
+    ): Single<HttpResponse<FormSchema>> {
+        return formService.getFormIdByName(formName, tenantName).flatMap {
+            formService.getDefaultSchema(it, subject)
+        }.map {
+            HttpResponse.ok(it)
+        }
     }
 
     /**
@@ -205,17 +203,21 @@ class FormManagerController(
      */
     @Get("/{formName}/schemas")
     fun getAllSchemas(subject: Subject,
-                      @QueryValue tenantName: String,
+                      @QueryValue tenantName: TenantId,
                       @QueryValue formName: String,
                       pageable: Pageable
-    ): Single<HttpResponse<List<FormSchemaEntity>>> {
+    ): Single<HttpResponse<List<FormSchema>>> {
         pageable.checkAllowedSortProperties(listOf("updatedAt")) //@TODO consider moving this into the service layer
 
-        return formService.getAllSchemas(FormMapKey(formName, TenantMapKey(tenantName).toUUID()).toUUID(), subject, pageable)
-                .toList()
+        return formService.getFormIdByName(formName, tenantName).toFlowable()
+                .flatMap {
+                    formService.getAllSchemas(it, subject, pageable)
+                }.toList()
                 .map {
                     HttpResponse.ok(it)
                 }
+
+
     }
 
 
@@ -231,23 +233,26 @@ class FormManagerController(
      */
     @Post("/{formName}/schemas/{schemaUuid}/submit{?dryRun}")
     fun submitFormsSpecificSchema(subject: Subject,
-                                  @QueryValue tenantName: String,
+                                  @QueryValue tenantName: TenantId,
                                   @QueryValue formName: String,
                                   @QueryValue schemaUuid: UUID,
                                   @Body submission: Single<FormSubmissionData>,
                                   @QueryValue dryRun: Boolean?
     ): Single<HttpResponse<FormSubmissionResponse>> {
-        return formService.getSchema(schemaUuid)
-                .flatMap {
-                    submission.map { submissionData ->
-                        FormSubmission(it.schema, submissionData)
-                    }
-                }.flatMap {
-                    formService.processFormSubmission(FormMapKey(formName, TenantMapKey(tenantName).toUUID()).toUUID(), schemaUuid, it, dryRun ?: false, subject)
+        return formService.getFormIdByName(formName, tenantName).flatMap {
+            formService.getSchema(FormSchemaEntityId(schemaUuid))
 
-                }.map {
-                    HttpResponse.ok(it)
-                }
+        }.flatMap {
+            submission.map { submissionData ->
+                val sub = FormSubmission(it.schema, submissionData)
+                Pair(sub, it)
+            }
+        }.flatMap { (sub, schemaEntity) ->
+            formService.processFormSubmission(schemaEntity.formId, schemaEntity.id, sub, dryRun?: false, subject)
+
+        }.map {
+            HttpResponse.ok(it)
+        }
     }
 
 

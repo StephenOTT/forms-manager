@@ -3,7 +3,6 @@ package formsmanager.core.hazelcast.map.persistence
 import formsmanager.core.hazelcast.map.CrudableObject
 import io.micronaut.data.annotation.TypeDef
 import io.micronaut.data.model.DataType
-import java.util.*
 import javax.persistence.Id
 import javax.persistence.MappedSuperclass
 
@@ -12,9 +11,9 @@ import javax.persistence.MappedSuperclass
  * This base entity creates a wrapper for the value.
  */
 @MappedSuperclass
-abstract class MapStoreItemWrapperEntity<V: CrudableObject>(
+abstract class MapStoreEntity<V: CrudableObject>(
         @Id
-        val key: UUID,
+        val key: String,
 
         val classId: String,
 

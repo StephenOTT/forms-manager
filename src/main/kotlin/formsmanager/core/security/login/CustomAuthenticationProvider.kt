@@ -1,31 +1,18 @@
-package formsmanager.core.security
+package formsmanager.core.security.login
 
-import formsmanager.ifDebugEnabled
-import formsmanager.users.UserMapKey
+import formsmanager.core.security.shiro.realm.LoginToken
+import formsmanager.core.ifDebugEnabled
 import formsmanager.users.service.UserService
 import io.micronaut.http.HttpRequest
 import io.micronaut.security.authentication.*
 import io.reactivex.Single
 import org.apache.shiro.authc.AuthenticationException
-import org.apache.shiro.authc.UsernamePasswordToken
 import org.apache.shiro.mgt.SecurityManager
 import org.apache.shiro.subject.support.DefaultSubjectContext
 import org.reactivestreams.Publisher
 import org.slf4j.LoggerFactory
-import java.util.*
 import javax.inject.Singleton
 
-
-//@TODO refactor Claims Generation for custom Issuer text
-//@TODO refactor Rejection Handler for cleaner responses
-
-/**
- * Used for converting micronaut auth reqest into a Shiro UsernamePasswordToken
- */
-fun AuthenticationRequest<*, *>.toUsernamePasswordToken(): UsernamePasswordToken {
-    //@TODO refactor this with a new UsernamePasswordToken that accepts a Tenant.  Must also refactor the UserDetails class for Micronaut, and the default Micronaut security controller for /login
-    return UsernamePasswordToken(this.identity.toString(), this.secret.toString())
-}
 
 /**
  * Authenticates with Shiro.
@@ -48,13 +35,13 @@ class CustomAuthenticationProvider(
 
     override fun authenticate(request: HttpRequest<*>, authenticationRequest: AuthenticationRequest<*, *>): Publisher<AuthenticationResponse> {
 
-        val identity = authenticationRequest.identity.toString()
+        check(authenticationRequest.identity is LoginIdentity)
+        check(authenticationRequest.secret is CharArray)
 
-        //@TODO refactor this with a new UsernamePasswordToken that accepts a Tenant.  Must also refactor the UserDetails class for Micronaut, and the default Micronaut security controller for /login
-        val email: String = identity.substringAfter(":", "")
-        val tenantName: String = identity.substringBefore(":", "")
+        val identity: LoginIdentity = authenticationRequest.identity as LoginIdentity
+        val password: CharArray = authenticationRequest.secret as CharArray
 
-        return userService.getUser(UserMapKey(email, tenantName))
+        return userService.getByEmail(identity.username, identity.tenant)
                 .onErrorResumeNext {
                     // @TODO review
                     // Could not find the email in users
@@ -66,9 +53,14 @@ class CustomAuthenticationProvider(
                         throw AuthenticationFailureException(AuthenticationFailed(AuthenticationFailureReason.USER_DISABLED))
 
                     } else {
-                        //LOGIN
+                        //Create subject
                         val subject = securityManager.createSubject(DefaultSubjectContext())
-                        subject.login(authenticationRequest.toUsernamePasswordToken())
+
+                        //Create LoginToken for Shiro
+                        val loginToken = LoginToken(identity.username, password, identity.tenant)
+
+                        // LOGIN with subject
+                        subject.login(loginToken)
 
                         if (subject.isAuthenticated) {
                             // Backup check to ensure that login was successful
@@ -90,7 +82,9 @@ class CustomAuthenticationProvider(
                     } else {
 
                         // LOGIN SUCCESS:
-                        UserDetails("${tenantName}:${ue.emailInfo.email}", listOf()) as AuthenticationResponse //Requires the cast for compiler to pick it up correctly
+                        //Requires the cast for compiler to pick it up correctly
+                        // Returns the UserDetails required by Micronaut
+                        UserDetails(ue.id.toString(), null) as AuthenticationResponse
                     }
 
                 }.toFlowable().onErrorReturn {

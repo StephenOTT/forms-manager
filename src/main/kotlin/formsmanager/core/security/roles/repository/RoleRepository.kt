@@ -5,12 +5,11 @@ import formsmanager.core.hazelcast.annotation.MapStore
 import formsmanager.core.hazelcast.map.HazelcastCrudRepository
 import formsmanager.core.hazelcast.map.persistence.CrudableMapStoreRepository
 import formsmanager.core.hazelcast.map.persistence.CurdableMapStore
-import formsmanager.core.hazelcast.map.persistence.MapStoreItemWrapperEntity
-import formsmanager.core.security.roles.RoleMapKey
-import formsmanager.core.security.roles.domain.RoleEntity
+import formsmanager.core.hazelcast.map.persistence.MapStoreEntity
+import formsmanager.core.security.roles.domain.Role
+import formsmanager.core.security.roles.domain.RoleId
 import io.micronaut.data.jdbc.annotation.JdbcRepository
 import io.micronaut.data.model.query.builder.sql.Dialect
-import java.util.*
 import javax.inject.Singleton
 import javax.persistence.Entity
 
@@ -18,22 +17,22 @@ import javax.persistence.Entity
  * Entity for storage in a IMDG MapStore for RoleEntity
  */
 @Entity
-class RoleEntityWrapper(key: RoleMapKey,
-                        classId: String,
-                        value: RoleEntity) : MapStoreItemWrapperEntity<RoleEntity>(key.toUUID(), classId, value)
+class RoleEntity(key: RoleId,
+                 classId: String,
+                 value: Role) : MapStoreEntity<Role>(key.toMapKey(), classId, value)
 
 /**
  * JDBC Repository for use by the Roles MapStore
  */
 @JdbcRepository(dialect = Dialect.H2)
-interface RolesMapStoreRepository : CrudableMapStoreRepository<RoleEntityWrapper>
+interface RolesMapStoreRepository : CrudableMapStoreRepository<RoleEntity>
 
 /**
  * Provides a MapStore implementation for RoleEntity
  */
 @Singleton
 class RolesMapStore(mapStoreRepository: RolesMapStoreRepository) :
-        CurdableMapStore<RoleEntity, RoleEntityWrapper, RolesMapStoreRepository>(mapStoreRepository)
+        CurdableMapStore<Role, RoleEntity, RolesMapStoreRepository>(mapStoreRepository)
 
 /**
  * Implementation providing a Role IMDG IMap CRUD operations repository.
@@ -42,7 +41,7 @@ class RolesMapStore(mapStoreRepository: RolesMapStoreRepository) :
 @MapStore(RolesMapStore::class, RoleHazelcastRepository.MAP_NAME)
 class RoleHazelcastRepository(
         hazelcastInstance: HazelcastInstance) :
-        HazelcastCrudRepository<RoleEntity>(
+        HazelcastCrudRepository<Role>(
                 hazelcastInstance = hazelcastInstance,
                 mapName = MAP_NAME
         ) {

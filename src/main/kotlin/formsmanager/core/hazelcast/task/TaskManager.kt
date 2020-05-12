@@ -2,7 +2,7 @@ package formsmanager.core.hazelcast.task
 
 import com.hazelcast.core.HazelcastInstance
 import com.hazelcast.core.IExecutorService
-import formsmanager.ifDebugEnabled
+import formsmanager.core.ifDebugEnabled
 import io.reactivex.Single
 import org.slf4j.LoggerFactory
 import javax.inject.Singleton

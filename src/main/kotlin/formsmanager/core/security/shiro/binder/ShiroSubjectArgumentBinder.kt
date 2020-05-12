@@ -1,6 +1,6 @@
 package formsmanager.core.security.shiro.binder
 
-import formsmanager.ifDebugEnabled
+import formsmanager.core.ifDebugEnabled
 import formsmanager.core.security.ShiroMicronautSecurityService
 import io.micronaut.context.annotation.Requires
 import io.micronaut.core.bind.ArgumentBinder.BindingResult

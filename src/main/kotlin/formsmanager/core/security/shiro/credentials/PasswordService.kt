@@ -1,6 +1,6 @@
-package formsmanager.core.security.shiro
+package formsmanager.core.security.shiro.credentials
 
-import formsmanager.ifDebugEnabled
+import formsmanager.core.ifDebugEnabled
 import io.reactivex.Single
 import io.reactivex.schedulers.Schedulers
 import org.apache.shiro.authc.credential.DefaultPasswordService

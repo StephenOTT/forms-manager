@@ -2,7 +2,7 @@ package formsmanager.core.security.shiro.realm
 
 import formsmanager.core.security.shiro.jwt.JwtAuthenticationInfo
 import formsmanager.core.security.shiro.jwt.JwtToken
-import formsmanager.users.UserMapKey
+import formsmanager.users.domain.UserId
 import formsmanager.users.service.UserService
 import io.reactivex.schedulers.Schedulers
 import org.apache.shiro.authc.AuthenticationInfo
@@ -34,15 +34,11 @@ class JwtAuthenticationRealm(
     override fun doGetAuthenticationInfo(token: AuthenticationToken): AuthenticationInfo? {
         if (token is JwtToken) {
 
-            //@TODO refactor to update the Micronaut JWT to include a tenant claim.
-            val email: String = token.principal.substringAfter(":", "")
-            val tenantName: String = token.principal.substringBefore(":", "")
-
             //@TODO review for better handling of a bad login.  Currently not working correctly when principal name cannot be found
             return kotlin.runCatching {
-                userService.getUser(UserMapKey(email, tenantName)).map {
-                    if (it.accountActive()){
-                        JwtAuthenticationInfo(email, tenantName, token)
+                userService.get(UserId(UUID.fromString(token.principal))).map { ue ->
+                    if (ue.accountActive()){
+                        JwtAuthenticationInfo(ue.id, ue.tenant)
                     } else {
                         throw IllegalArgumentException("JWT cannot be accepted: Account is not active.")
                     }

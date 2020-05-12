@@ -1,7 +1,7 @@
 package formsmanager.forms.submission
 
-import formsmanager.forms.domain.FormEntity
-import formsmanager.forms.domain.FormSchemaEntity
+import formsmanager.forms.domain.Form
+import formsmanager.forms.domain.FormSchema
 import formsmanager.forms.validator.FormSubmission
 import io.reactivex.Single
 import org.apache.shiro.subject.Subject
@@ -16,6 +16,6 @@ interface SubmissionStrategy {
      * DryRun is typically used for testing or server side validation tests where you want the validator/processor to run, but you do not want the processor to push the results to another system.
      * It is up to the implementation to decide exactly how DryRun is used.
      */
-    fun process(formSubmission: FormSubmission, formEntity: FormEntity?, formSchemaEntity: FormSchemaEntity?, dryRun: Boolean, subject: Subject?): Single<FormSubmissionResponse>
+    fun process(formSubmission: FormSubmission, form: Form?, formSchema: FormSchema?, dryRun: Boolean, subject: Subject?): Single<FormSubmissionResponse>
 
 }

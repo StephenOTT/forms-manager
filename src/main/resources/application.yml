@@ -40,7 +40,7 @@ micronaut:
               jws-algorithm: HS256
 jackson:
 #  bean-introspection-module: true
-  serializationInclusion: ALWAYS
+  serializationInclusion: ALWAYS # Includes Nulls and Empty Arrays in serialization
   serialization:
     indentOutput: false # Use for debug usage such as console
     writeDatesAsTimestamps: false # turn to true if you want number based dates (epoch)
@@ -54,6 +54,7 @@ datasources:
     schema-generate: CREATE_DROP
     dialect: H2
 ---
+# The Form Validation Server
 formValidator:
   client:
     host: http://localhost:8085
@@ -61,25 +62,29 @@ formValidator:
 myapp:
   default:
     tenants:
-      - name: AdminTenant
+      - name: admin-tenant
+        description: my custom admin tenant
+      - name: generic1
+        description: My generic tenant
     roles:
       - name: SUPER_ADMIN_ROLE
-        tenant: AdminTenant
+        tenant: admin-tenant
         permissions:
+          - g"tenants:*"
           - "roles:*"
           - "groups:*"
-          - "tenants:*"
+          - "users:*"
           - "forms:*"
           - "form_schemas:*"
           - "services:*"
-          - "users:*"
     groups:
       - name: super-admin-group
-        tenant: AdminTenant
+        tenant: admin-tenant
         roles:
           - SUPER_ADMIN_ROLE
     users:
-      - email: 123@123.com # Initial password is auto generated and provided in console
-        tenant: AdminTenant
+      - email: 123@123.com
+        password: 1234567890
+        tenant: admin-tenant
         groups:
           - super-admin-group

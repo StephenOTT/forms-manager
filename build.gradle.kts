@@ -1,5 +1,6 @@
-import com.github.jengelman.gradle.plugins.shadow.tasks.*
-import org.jetbrains.kotlin.gradle.tasks.*
+
+import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 val developmentOnly: Configuration by configurations.creating
 val kotlinVersion: String by project
@@ -47,6 +48,8 @@ dependencies {
     kapt(enforcedPlatform("io.micronaut:micronaut-bom:$micronautVersion"))
     kapt("io.micronaut:micronaut-inject-java")
     kapt("io.micronaut:micronaut-validation")
+    implementation("io.micronaut:micronaut-validation")
+
     kaptTest("io.micronaut:micronaut-inject-java")
 
     implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlinVersion")

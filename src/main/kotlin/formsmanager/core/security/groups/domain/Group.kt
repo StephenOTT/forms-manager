@@ -1,21 +1,35 @@
 package formsmanager.core.security.groups.domain
 
-import formsmanager.core.*
+import com.hazelcast.internal.util.UuidUtil
+import formsmanager.core.ConfigField
+import formsmanager.core.DataField
+import formsmanager.core.TenantField
+import formsmanager.core.TimestampFields
 import formsmanager.core.hazelcast.map.CrudableObject
-import formsmanager.core.security.groups.GroupMapKey
-import formsmanager.core.security.groups.repository.GroupEntityWrapper
-import formsmanager.core.security.shiro.domain.Role
+import formsmanager.core.hazelcast.map.CrudableObjectId
+import formsmanager.core.hazelcast.map.persistence.MapStoreEntity
+import formsmanager.core.security.SecurityAware
+import formsmanager.core.security.groups.repository.GroupEntity
+import formsmanager.core.security.roles.domain.RoleId
+import formsmanager.tenants.domain.TenantId
 import io.swagger.v3.oas.annotations.media.Schema
-import net.minidev.json.annotate.JsonIgnore
 import java.time.Instant
 import java.util.*
 
-interface SecurityAware: TenantField, OwnerField
+data class GroupId(val value: UUID): CrudableObjectId<GroupId> {
+    override fun toMapKey(): String {
+        return value.toString()
+    }
+
+    override fun compareTo(other: GroupId): Int {
+        return value.compareTo(other.value)
+    }
+}
 
 @Schema
-data class GroupEntity(
+data class Group(
 
-        override val internalId: UUID = UUID.randomUUID(),
+        override val id: GroupId,
 
         override val ol: Long = 0,
 
@@ -23,7 +37,7 @@ data class GroupEntity(
 
         val description: String? = null,
 
-        val roles: Set<Role>,
+        val roles: Set<RoleId>,
 
         override val createdAt: Instant = Instant.now(),
 
@@ -33,36 +47,32 @@ data class GroupEntity(
 
         override val config: Map<String, Any?> = mapOf(),
 
-        override val tenant: UUID,
+        override val tenant: TenantId,
 
-        override val owner: UUID = UUID.nameUUIDFromBytes("dog".toByteArray())
+        override val owner: UUID
 
 ): TimestampFields,
         DataField,
         ConfigField,
         TenantField,
         SecurityAware,
-        Comparable<GroupEntity>,
+        Comparable<Group>,
         CrudableObject {
 
-    override fun toEntityWrapper(): GroupEntityWrapper {
-        return GroupEntityWrapper(mapKey().toUUID(), this::class.qualifiedName!!, this)
-    }
-
-    override fun mapKey(): GroupMapKey {
-        return GroupMapKey(this.name, this.tenant)
+    override fun toEntityWrapper(): MapStoreEntity<Group> {
+        return GroupEntity(id, this::class.qualifiedName!!, this)
     }
 
     /**
      * Compares based on the createdAt property
      */
-    override fun compareTo(other: GroupEntity): Int {
+    override fun compareTo(other: Group): Int {
         return this.createdAt.compareTo(other.createdAt)
     }
 }
 
 @Schema
-data class GroupEntityCreator(
+data class GroupCreator(
         var ol: Long = 0,
 
         var name: String,
@@ -73,31 +83,35 @@ data class GroupEntityCreator(
 
         val config: Map<String, Any?> = mapOf(),
 
-        val roles: Set<Role> = setOf(),
-        val tenant: String //@TODO remove later
+        val roles: Set<RoleId> = setOf(),
+
+        val owner: UUID
 
 ){
     /**
      * Convert to GroupEntity.
      * Id is a parameter to allow Creators to be used for existing entities (such as when doing a Update)
      */
-    fun toGroupEntity(internalId: UUID = UUID.randomUUID(), tenant: UUID): GroupEntity{
-        return GroupEntity(
-                internalId = internalId,
+    fun toGroupEntity(id: GroupId = GroupId(UuidUtil.newSecureUUID()), tenant: TenantId): Group{
+        return Group(
+                id = id,
                 ol = ol,
                 name = name,
                 description = description,
                 data = data,
                 config = config,
                 tenant = tenant,
-                roles = roles
+                roles = roles,
+                owner = owner
         )
     }
 }
 
 @Schema
-data class GroupEntityModifier(
+data class GroupModifier(
         var ol: Long = 0,
+
+        val name: String,
 
         var description: String? = null,
 
@@ -105,23 +119,26 @@ data class GroupEntityModifier(
 
         val config: Map<String, Any?> = mapOf(),
 
-        val roles: Set<Role> = setOf()
+        val roles: Set<RoleId> = setOf(),
+
+        val owner: UUID
 
 ){
     /**
      * Convert to GroupEntity.
      * Id is a parameter to allow Creators to be used for existing entities (such as when doing a Update)
      */
-    fun toGroupEntity(internalId: UUID, groupName: String, tenant: UUID): GroupEntity{
-        return GroupEntity(
-                internalId = internalId,
+    fun toGroupEntity(id: GroupId, tenant: TenantId): Group{
+        return Group(
+                id = id,
                 ol = ol,
-                name = groupName,
+                name = name,
                 description = description,
                 data = data,
                 config = config,
                 tenant = tenant,
-                roles = roles
+                roles = roles,
+                owner = owner
         )
     }
 }

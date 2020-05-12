@@ -1,9 +1,9 @@
 package formsmanager.core.hazelcast.query.sql.binder
 
-import formsmanager.core.hazelcast.query.sql.FilterException
-import formsmanager.core.hazelcast.query.sql.Filterable
-import formsmanager.core.hazelcast.query.sql.SqlPredicateRules
-import formsmanager.core.hazelcast.query.sql.SqlPredicateValidationRules
+import formsmanager.core.hazelcast.query.sql.filterable.FilterException
+import formsmanager.core.hazelcast.query.sql.filterable.Filterable
+import formsmanager.core.hazelcast.query.sql.validator.SqlPredicateRules
+import formsmanager.core.hazelcast.query.sql.validator.SqlPredicateValidationRules
 import io.micronaut.context.annotation.Requires
 import io.micronaut.core.annotation.AnnotationValue
 import io.micronaut.core.bind.ArgumentBinder.BindingResult
@@ -31,18 +31,20 @@ class FilterableArgumentBinder : TypedRequestArgumentBinder<Filterable> {
         // if filter parameter is present in http request
         return if (filterString.isPresent) {
             kotlin.runCatching {
+                // Parse string into a Filterable (SqlPredicate)
                 val filter = Filterable.from(filterString.get())
-                if (filterControlAnn.isPresent){
+
+                if (filterControlAnn.isPresent) {
+                    // If the FilterableControl annotation is present:
+                    // Build Rules based on Annotation, and check the Predicate against the rules.
                     val rules = buildSqlPredicateValidationRule(filterControlAnn.get())
                     filter.checkPredicateRules(rules)
                 }
-                BindingResult {
-                    Optional.of(
-                            filter
-                    )
-                }
+                // Return the filter
+                BindingResult { Optional.of(filter) }
             }.getOrElse {
-                throw FilterException(it.message ?: "Invalid filter query structure.", filterString.get(), it)
+                throw FilterException(it.message
+                        ?: "Invalid filter query structure.", filterString.get(), it)
             }
 
             // If the filter parameter was not present in http request
@@ -55,7 +57,7 @@ class FilterableArgumentBinder : TypedRequestArgumentBinder<Filterable> {
         }
     }
 
-    private fun buildSqlPredicateValidationRule(annValue: AnnotationValue<FilterableControl>): SqlPredicateValidationRules{
+    private fun buildSqlPredicateValidationRule(annValue: AnnotationValue<FilterableControl>): SqlPredicateValidationRules {
         val prohibitedPropertiesAnnValue = annValue.stringValues("prohibitProperties").asList()
         val prohibitedTypesAnnValue = annValue.enumValues("prohibitTypes", SqlPredicateRules.SqlPredicates::class.java).asList()
 
@@ -68,29 +70,33 @@ class FilterableArgumentBinder : TypedRequestArgumentBinder<Filterable> {
         val allowArrayAnyKeyword = annValue.getRequiredValue("allowArrayAnyKeyword", Boolean::class.java)
         val allowArrayItemNumberAccessor = annValue.getRequiredValue("allowArrayItemNumberAccessor", Boolean::class.java)
 
-        val prohibitProperties = if (prohibitedPropertiesAnnValue.isEmpty()){
-            null
-        } else {
-            prohibitedPropertiesAnnValue
-        }
+        val prohibitProperties =
+                if (prohibitedPropertiesAnnValue.isEmpty()) {
+                    null
+                } else {
+                    prohibitedPropertiesAnnValue
+                }
 
-        val allowedProperties = if (prohibitProperties == null && allowedPropertiesAnnValue.isNotEmpty()){
-            allowedPropertiesAnnValue
-        } else {
-            null
-        }
+        val allowedProperties =
+                if (prohibitProperties == null && allowedPropertiesAnnValue.isNotEmpty()) {
+                    allowedPropertiesAnnValue
+                } else {
+                    null
+                }
 
-        val prohibitTypes = if (prohibitedTypesAnnValue.isEmpty()){
-            null
-        } else {
-            prohibitedTypesAnnValue
-        }
+        val prohibitTypes =
+                if (prohibitedTypesAnnValue.isEmpty()) {
+                    null
+                } else {
+                    prohibitedTypesAnnValue
+                }
 
-        val allowedTypes = if (prohibitTypes == null && allowedTypesAnnValue.isNotEmpty()){
-            allowedTypesAnnValue
-        } else {
-            null
-        }
+        val allowedTypes =
+                if (prohibitTypes == null && allowedTypesAnnValue.isNotEmpty()) {
+                    allowedTypesAnnValue
+                } else {
+                    null
+                }
 
         val customRules = listOfNotNull(
                 if (!allowThisKeyword) SqlPredicateRules.CommonRules.noThisKeyword else null,
@@ -108,6 +114,4 @@ class FilterableArgumentBinder : TypedRequestArgumentBinder<Filterable> {
 
         )
     }
-
-
 }

@@ -1,4 +1,4 @@
-package formsmanager.core.security
+package formsmanager.core.security.login
 
 import io.micronaut.security.authentication.AuthenticationFailed
 

@@ -53,7 +53,7 @@ class AdvUpdateEntryProcessor<K : Any, O : CrudableObject>(private val updateVal
             throw NotFoundException("Item ${entry.key} could not be found.")
         } else {
             if (value.ol != updateValue.ol) {
-                throw OptimisticLockingException("Optimistic Locking Exception: Provided item ${updateValue.mapKey().toUUID()} does not have the same OL value of locked item ${value.ol}.")
+                throw OptimisticLockingException("Optimistic Locking Exception: Provided item ${updateValue.id} does not have the same OL value of locked item ${value.ol}.")
             }
             entry.setValue(updateLogic.invoke(value, updateValue))
             return entry.value

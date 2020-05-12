@@ -1,4 +1,4 @@
-package formsmanager.core.security
+package formsmanager.core.security.shiro
 
 import io.reactivex.Single
 import org.apache.shiro.authz.AuthorizationException

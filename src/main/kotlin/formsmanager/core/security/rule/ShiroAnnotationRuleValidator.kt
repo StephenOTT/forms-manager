@@ -1,6 +1,6 @@
 package formsmanager.core.security.rule
 
-import formsmanager.ifDebugEnabled
+import formsmanager.core.ifDebugEnabled
 import org.apache.shiro.authz.annotation.Logical
 import org.apache.shiro.subject.Subject
 import org.slf4j.LoggerFactory

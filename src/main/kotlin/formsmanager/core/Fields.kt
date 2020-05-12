@@ -1,10 +1,11 @@
 package formsmanager.core
 
+import formsmanager.tenants.domain.TenantId
 import java.time.Instant
 import java.util.*
 
 interface TenantField{
-    val tenant: UUID
+    val tenant: TenantId
 }
 
 interface TimestampFields{

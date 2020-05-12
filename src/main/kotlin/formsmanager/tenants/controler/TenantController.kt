@@ -1,10 +1,9 @@
 package formsmanager.tenants.controler
 
 import formsmanager.core.exception.NotFoundException
-import formsmanager.tenants.TenantMapKey
-import formsmanager.tenants.domain.TenantEntity
-import formsmanager.tenants.domain.TenantEntityCreator
-import formsmanager.tenants.domain.TenantEntityModifier
+import formsmanager.tenants.domain.Tenant
+import formsmanager.tenants.domain.TenantCreator
+import formsmanager.tenants.domain.TenantModifier
 import formsmanager.tenants.service.TenantService
 import io.micronaut.http.HttpRequest
 import io.micronaut.http.HttpResponse
@@ -15,7 +14,6 @@ import org.apache.shiro.authz.annotation.RequiresGuest
 import org.apache.shiro.subject.Subject
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import java.util.*
 
 
 @Controller("/tenant")
@@ -36,8 +34,8 @@ class TenantController(
      * @exception NotFoundException Could not find tenant based on Id.
      */
     @Get("/{tenantName}")
-    fun getTenant(subject: Subject, @QueryValue tenantName: String): Single<HttpResponse<TenantEntity>> {
-        return tenantService.getTenant(TenantMapKey(tenantName), subject)
+    fun getTenant(subject: Subject, @QueryValue tenantName: String): Single<HttpResponse<Tenant>> {
+        return tenantService.getByName(tenantName, subject)
                 .map {
                     HttpResponse.ok(it)
                 }
@@ -49,8 +47,8 @@ class TenantController(
      * @return the created Tenant
      */
     @Post("/")
-    fun createTenant(subject: Subject, @Body tenant: TenantEntityCreator): Single<HttpResponse<TenantEntity>> {
-        return tenantService.createTenant(tenant.toTenantEntity())//@TODO !!** RE-ADD The Subject
+    fun createTenant(subject: Subject, @Body tenant: TenantCreator): Single<HttpResponse<Tenant>> {
+        return tenantService.create(tenant.toTenant())//@TODO !!** RE-ADD The Subject
                 .map {
                     HttpResponse.ok(it)
                 }
@@ -63,10 +61,10 @@ class TenantController(
      * @return The Tenant
      */
     @Patch("/{tenantName}")
-    fun updateTenant(subject: Subject, @QueryValue tenantName: String, @Body tenant: TenantEntityModifier): Single<HttpResponse<TenantEntity>> {
-        return tenantService.getTenant(TenantMapKey(tenantName))
+    fun updateTenant(subject: Subject, @QueryValue tenantName: String, @Body tenant: TenantModifier): Single<HttpResponse<Tenant>> {
+        return tenantService.getByName(tenantName)
                 .flatMap { te ->
-                    tenantService.updateTenant(tenant.toTenantEntity(te.name, te.internalId))
+                    tenantService.update(tenant.toTenant(te.id))
                 }.map {
                     HttpResponse.ok(it)
                 }

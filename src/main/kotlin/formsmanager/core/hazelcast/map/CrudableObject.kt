@@ -1,8 +1,7 @@
 package formsmanager.core.hazelcast.map
 
-import formsmanager.core.hazelcast.map.persistence.MapStoreItemWrapperEntity
+import formsmanager.core.hazelcast.map.persistence.MapStoreEntity
 import net.minidev.json.annotate.JsonIgnore
-import java.util.*
 
 /**
  * Base interface to define objects that are to be used for CRUD style operations.
@@ -21,7 +20,7 @@ interface CrudableObject {
      * Typically used for utils like logging and tracking.
      * getMapKey is used as the representation of the key for the user.
      */
-    val internalId: UUID
+    val id: CrudableObjectId<out CrudableObjectId<*>>
 
     /**
      * Optimistic locking value
@@ -32,11 +31,5 @@ interface CrudableObject {
      * Converts object to a Wrapped object used in Database storage (jpa)
      */
     @JsonIgnore
-    fun toEntityWrapper(): MapStoreItemWrapperEntity<*>
-
-    /**
-     * Get the MapKey for this crudable object.
-     */
-    @JsonIgnore
-    fun mapKey(): MapKey
+    fun toEntityWrapper(): MapStoreEntity<out CrudableObject>
 }

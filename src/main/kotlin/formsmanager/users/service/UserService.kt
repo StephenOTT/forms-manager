@@ -1,14 +1,19 @@
 package formsmanager.users.service
 
-import formsmanager.core.security.shiro.PasswordService
-import formsmanager.ifDebugEnabled
+import com.hazelcast.projection.Projections
+import com.hazelcast.query.Predicate
+import com.hazelcast.query.Predicates
+import formsmanager.core.ifDebugEnabled
+import formsmanager.core.security.shiro.checkAuthorization
+import formsmanager.core.security.shiro.credentials.PasswordService
+import formsmanager.tenants.domain.TenantId
 import formsmanager.tenants.service.TenantService
-import formsmanager.users.UserMapKey
-import formsmanager.users.domain.UserEntity
+import formsmanager.users.domain.User
+import formsmanager.users.domain.UserId
 import formsmanager.users.repository.UsersHazelcastRepository
-import io.reactivex.Completable
 import io.reactivex.Single
-import org.apache.shiro.authz.permission.WildcardPermission
+import io.reactivex.schedulers.Schedulers
+import org.apache.shiro.crypto.hash.Hash
 import org.apache.shiro.subject.Subject
 import org.slf4j.LoggerFactory
 import java.time.Instant
@@ -26,23 +31,22 @@ class UserService(
         private val log = LoggerFactory.getLogger(UserService::class.java)
     }
 
-    fun createUser(email: String, tenantName: String, subject: Subject? = null): Single<UserEntity> {
-        return createUser(UserMapKey(email, tenantName), subject)
-    }
-
-    fun createUser(userMapKey: UserMapKey, subject: Subject? = null): Single<UserEntity> {
+    /**
+     * Only Anonymous Users or if Subject == null can use these function
+     */
+    fun create(item: User, subject: Subject? = null): Single<User> {
         subject?.let {
             require(!it.isAuthenticated, lazyMessage = { "Cannot create user. Only anonymous users can create a user." })
         }
-        return tenantService.tenantExists(userMapKey.tenant, true)
+        return tenantService.exists(item.tenant, true)
                 .flatMap {
-                    userRepository.exists(userMapKey.toUUID())
+                    userRepository.exists(item.id)
 
                 }.map {
                     if (it) {
                         throw IllegalArgumentException("Unable to create user. User Already exists.")
                     } else {
-                        UserEntity.newUser(userMapKey.email, userMapKey.tenant)
+                        item
                     }
 
                 }.doOnSuccess {
@@ -52,18 +56,23 @@ class UserService(
                 }
     }
 
-    fun getUser(userMapKey: UserMapKey, subject: Subject? = null): Single<UserEntity> {
-        return getUser(userMapKey.toUUID(), subject)
-    }
-
-    fun getUser(userMapKey: UUID, subject: Subject? = null): Single<UserEntity> {
-        return userRepository.get(userMapKey).map { ue ->
+    fun get(userMapKey: UserId, subject: Subject? = null): Single<User> {
+        return userRepository.get(userMapKey).flatMap { ue ->
             // Dynamic Permission, where the user MUST have access to their specific user ID.
             // Means that ever user will require a permission to access their account.
-            subject?.let {
-                subject.checkPermission("users:read:${ue.tenant}:${ue.internalId}")
+            subject.checkAuthorization("users:read:${ue.tenant}:${ue.id}").map {
+                ue
             }
-            ue
+        }
+    }
+
+    fun getByEmail(email: String, tenantId: TenantId, subject: Subject? = null): Single<User> {
+        return userRepository.get(Predicate {
+            it.value.tenant == tenantId && it.value.emailInfo.email == email
+        }).flatMap { user ->
+            subject.checkAuthorization("users:read:${user.tenant}:${user.id}").map {
+                user
+            }
         }
     }
 
@@ -71,16 +80,21 @@ class UserService(
 
     }
 
-    /**
-     * Determine if user exists by email and tenant id.
-     * Does not implement permission checks.
-     */
-    fun userExists(userMapKey: UserMapKey): Single<Boolean> {
-        return userExists(userMapKey.toUUID())
+
+    fun exists(userMapKey: UserId): Single<Boolean> {
+        return userRepository.exists(userMapKey)
     }
 
-    fun userExists(userMapKey: UUID): Single<Boolean> {
-        return userRepository.exists(userMapKey)
+    fun getUserIdByEmail(email: String, tenantId: TenantId): Single<UserId> {
+        return Single.fromCallable {
+            userRepository.mapService.project(
+                    Projections.singleAttribute<MutableMap.MutableEntry<String, User>, UserId>("id"),
+                    Predicates.and(
+                            Predicates.equal<String, User>("tenant", tenantId),
+                            Predicates.equal<String, User>("emailInfo.email", email)
+                    )
+            ).single()
+        }
     }
 
 
@@ -91,16 +105,15 @@ class UserService(
      * Tenant is provided as a method argument in scenarios where a user is being changed from one tenant to another.
      * If the user is being changed from one tenant to another, then the userEntity should contain the new tenant, and the method argument must have the current user's tenant
      */
-    fun updateUser(userEntity: UserEntity, subject: Subject? = null): Single<UserEntity> {
-        return userRepository.update(userEntity) { originalItem, newItem ->
-            subject?.let {
-                subject.checkPermission("users:update:${userEntity.tenant}:${userEntity.internalId}")
-            }
+    fun update(user: User, subject: Subject? = null): Single<User> {
+        return userRepository.update(user) { originalItem, newItem ->
+            subject.checkAuthorization("users:update:${user.tenant}:${user.id}")
+                    .subscribeOn(Schedulers.io()).blockingGet()
 
             //Update logic for automated fields @TODO consider automation with annotations
             newItem.copy(
                     ol = originalItem.ol + 1,
-                    internalId = originalItem.internalId,
+                    id = originalItem.id,
                     tenant = originalItem.tenant, //@TODO REVIEW // Means that a user cannot modify the tenant ID. / They cannot change a user's tenant.
                     createdAt = originalItem.createdAt,
                     updatedAt = Instant.now()
@@ -136,32 +149,25 @@ class UserService(
 
     }
 
-    /**
-     * Checks if the user is active.
-     * Does not have permission checks.
-     */
-    fun userIsActive(userMapKey: UserMapKey): Single<Boolean> {
-        return userIsActive(userMapKey.toUUID())
-    }
 
-    fun userIsActive(userMapKey: UUID): Single<Boolean> {
+    fun userIsActive(userMapKey: UserId): Single<Boolean> {
         return userRepository.isActive(userMapKey)
     }
 
     /**
      * Completes a user registration, with email verification and supply of password
      */
-    fun completeRegistration(userMapKey: UserMapKey,
+    fun completeRegistration(userId: UserId,
                              emailConfirmToken: UUID,
                              pwdResetToken: UUID,
                              cleartextPassword: CharArray,
                              subject: Subject? = null
-    ): Single<UserEntity> {
+    ): Single<User> {
         subject?.let {
             require(!it.isAuthenticated, { "Unable to complete registration. Must be a anonymous user in order to complete a registration." })
         }
-        return getUser(userMapKey).map {
-            require(it.emailInfo.email == userMapKey.email) { "Invalid Email" }
+        return get(userId).map {
+//            require(it.emailInfo.email == userMapKey.email) { "Invalid Email" }
             require(it.emailInfo.emailConfirmToken == emailConfirmToken) { "Invalid email token." }
             require(!it.emailInfo.emailConfirmed) { "Email is already confirmed." }
             check(it.passwordInfo.passwordHash == null) { "Password hash issue," }
@@ -185,7 +191,12 @@ class UserService(
             }
 
         }.flatMap {
-            updateUser(it)
+            update(it)
         }
     }
+
+    fun createPasswordHash(password: CharArray): Single<Hash>{
+        return passwordService.hashPassword(password)
+    }
+
 }

@@ -1,10 +1,8 @@
 package formsmanager.users.controller
 
+import formsmanager.tenants.domain.TenantId
 import formsmanager.tenants.service.TenantService
-import formsmanager.users.UserMapKey
-import formsmanager.users.domain.CompleteRegistrationRequest
-import formsmanager.users.domain.UserRegistration
-import formsmanager.users.domain.UserRegistrationResponse
+import formsmanager.users.domain.*
 import formsmanager.users.service.UserService
 import io.micronaut.http.HttpRequest
 import io.micronaut.http.HttpResponse
@@ -23,20 +21,24 @@ class UsersController(
 
     @Post("/register")
     @RequiresGuest
-    fun register(subject: Subject, @QueryValue tenantName: String, @Body registration: UserRegistration): Single<HttpResponse<UserRegistrationResponse>> {
-        return userService.createUser(registration.email, tenantName, subject)
-                .map {
-                    HttpResponse.created(
-                            UserRegistrationResponse("Pending email verification")
-                    )
-                }
+    fun register(subject: Subject, @QueryValue tenantName: TenantId, @Body registration: UserRegistration): Single<HttpResponse<UserRegistrationResponse>> {
+        return Single.fromCallable {
+            User.newUser(registration.email, tenantName, setOf())
+        }.flatMap {
+            userService.create(it)
+        }.map {
+            HttpResponse.created(
+                    UserRegistrationResponse("Pending email verification")
+            )
+        }
     }
 
     @Post("/register/complete")
     @RequiresGuest
-    fun completeRegistration(@QueryValue tenantName: String, @Body body: CompleteRegistrationRequest): Single<HttpResponse<UserRegistrationResponse>> {
+    fun completeRegistration(@QueryValue tenantName: TenantId, @Body body: CompleteRegistrationRequest): Single<HttpResponse<UserRegistrationResponse>> {
+        //@TODO add tenant logic to use the tenant to pass into the completion check.
         return userService.completeRegistration(
-                UserMapKey(body.email, tenantName),
+                UserId(UUID.fromString(body.userId)),
                 body.emailConfirmToken,
                 body.pwdResetToken,
                 body.cleartextPassword

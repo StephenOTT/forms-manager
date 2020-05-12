@@ -1,18 +1,30 @@
 package formsmanager.core.security.roles.domain
 
+import com.hazelcast.internal.util.UuidUtil
 import formsmanager.core.*
 import formsmanager.core.hazelcast.map.CrudableObject
-import formsmanager.core.security.roles.RoleMapKey
-import formsmanager.core.security.roles.repository.RoleEntityWrapper
+import formsmanager.core.hazelcast.map.CrudableObjectId
+import formsmanager.core.security.roles.repository.RoleEntity
+import formsmanager.tenants.domain.TenantId
 import io.swagger.v3.oas.annotations.media.Schema
-import org.apache.shiro.authz.Permission
+import java.lang.IllegalArgumentException
 import java.time.Instant
 import java.util.*
 
-@Schema
-data class RoleEntity(
+data class RoleId(val value: UUID): CrudableObjectId<RoleId> {
+    override fun toMapKey(): String {
+        return value.toString()
+    }
 
-        override val internalId: UUID = UUID.randomUUID(),
+    override fun compareTo(other: RoleId): Int {
+        return value.compareTo(other.value)
+    }
+}
+
+@Schema
+data class Role(
+
+        override val id: RoleId,
 
         override val ol: Long = 0,
 
@@ -20,7 +32,7 @@ data class RoleEntity(
 
         val description: String? = null,
 
-        val permissions: Set<Permission>,
+        val permissions: Set<String>,
 
         override val createdAt: Instant = Instant.now(),
 
@@ -30,24 +42,37 @@ data class RoleEntity(
 
         override val config: Map<String, Any?> = mapOf(),
 
-        override val tenant: UUID
+        override val tenant: TenantId
 
         ): TimestampFields,
         DataField,
         ConfigField,
         TenantField,
         CrudableObject {
-    override fun toEntityWrapper(): RoleEntityWrapper {
-        return RoleEntityWrapper(mapKey(), this::class.qualifiedName!!, this)
+    override fun toEntityWrapper(): RoleEntity {
+        return RoleEntity(id, this::class.qualifiedName!!, this)
     }
 
-    override fun mapKey(): RoleMapKey {
-        return RoleMapKey(name, tenant)
+    companion object {
+        val roleNameRegex = Regex("^[A-Z0-9]+(?:_[A-Z0-9]+)*\$")
     }
+
+    init {
+        roleNameValidation(name)
+    }
+
+    /**
+     * Validate role name against Role name validation rules.
+     */
+    @Throws(IllegalArgumentException::class)
+    private fun roleNameValidation(name: String){
+        require(name.matches(roleNameRegex))
+    }
+
 }
 
 @Schema
-data class RoleEntityCreator(
+data class RoleCreator(
         var ol: Long = 0,
 
         var name: String,
@@ -58,16 +83,16 @@ data class RoleEntityCreator(
 
         val config: Map<String, Any?> = mapOf(),
 
-        val permissions: Set<Permission> = setOf()
+        val permissions: Set<String> = setOf()
 
 ){
     /**
      * Convert to GroupEntity.
      * Id is a parameter to allow Creators to be used for existing entities (such as when doing a Update)
      */
-    fun toRoleEntity(internalId: UUID = UUID.randomUUID(), tenant: UUID): RoleEntity{
-        return RoleEntity(
-                internalId = internalId,
+    fun toRole(id: RoleId = RoleId(UuidUtil.newSecureUUID()), tenant: TenantId): Role{
+        return Role(
+                id = id,
                 ol = ol,
                 name = name,
                 description = description,
@@ -80,8 +105,10 @@ data class RoleEntityCreator(
 }
 
 @Schema
-data class RoleEntityModifier(
+data class RoleModifier(
         var ol: Long = 0,
+
+        var name: String,
 
         var description: String? = null,
 
@@ -91,16 +118,16 @@ data class RoleEntityModifier(
 
         val config: Map<String, Any?> = mapOf(),
 
-        val permissions: Set<Permission> = setOf()
+        val permissions: Set<String> = setOf()
 
 ){
     /**
      * Convert to GroupEntity.
      * Id is a parameter to allow Creators to be used for existing entities (such as when doing a Update)
      */
-    fun toRoleEntity(internalId: UUID, name: String, tenant: UUID): RoleEntity{
-        return RoleEntity(
-                internalId = internalId,
+    fun toRole(id: RoleId, tenant: TenantId): Role{
+        return Role(
+                id = id,
                 ol = ol,
                 name = name,
                 description = description,
