@@ -5,6 +5,7 @@ import formsmanager.core.hazelcast.map.CrudableObject
 import io.micronaut.core.convert.ConversionContext
 import io.micronaut.core.convert.TypeConverter
 import java.util.*
+import javax.inject.Named
 import javax.inject.Singleton
 
 /**
@@ -15,7 +16,7 @@ import javax.inject.Singleton
  */
 @Singleton
 class CrudableObjectByteArrayConverter(
-        private val mapper: ObjectMapper
+        @param:Named("db") private val mapper: ObjectMapper
 ) : TypeConverter<CrudableObject, ByteArray> {
 
     override fun convert(`object`: CrudableObject, targetType: Class<ByteArray>, context: ConversionContext): Optional<ByteArray> {

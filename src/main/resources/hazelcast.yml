@@ -18,3 +18,47 @@ hazelcast:
         time-to-live-seconds: 600
         max-idle-seconds: 300
         invalidate-on-change: true
+#        in-memory-format: OBJECT
+    roles:
+      near-cache:
+        time-to-live-seconds: 600
+        max-idle-seconds: 300
+        invalidate-on-change: true
+        in-memory-format: OBJECT
+      indexes:
+        - type: HASH
+          attributes:
+            - "tenant"
+            - "name"
+    groups:
+      near-cache:
+        time-to-live-seconds: 600
+        max-idle-seconds: 300
+        invalidate-on-change: true
+        in-memory-format: OBJECT
+      indexes:
+        - type: HASH
+          attributes:
+            - "tenant"
+            - "name"
+    users:
+      near-cache:
+        time-to-live-seconds: 600
+        max-idle-seconds: 300
+        invalidate-on-change: true
+        in-memory-format: OBJECT
+      indexes:
+        - type: HASH
+          attributes:
+            - "tenant"
+            - "username"
+    tenants:
+      near-cache:
+        time-to-live-seconds: 600
+        max-idle-seconds: 300
+        invalidate-on-change: true
+        in-memory-format: OBJECT
+      indexes:
+        - type: HASH
+          attributes:
+            - "name"

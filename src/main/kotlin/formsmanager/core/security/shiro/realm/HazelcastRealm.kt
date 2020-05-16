@@ -111,7 +111,7 @@ class HazelcastRealm(
 //            val tenantName = token.username.substringBefore(":", "")
 
             return kotlin.runCatching {
-                userService.getByEmail(token.principal.username, token.principal.tenant).map {
+                userService.getByUsername(token.principal.username, token.principal.tenant).map {
                     //@TODO review if the Base64.decode is actually required.  Saw somewhere there is auto decode/detection based on configuration in the realm.
 
                     //Note: The order of the SimplePrincipalCollection list matters: The first item in the list is considered the "Primary Principal".  See Shiro docs for more info.

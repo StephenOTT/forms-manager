@@ -11,14 +11,23 @@ import formsmanager.core.hazelcast.map.persistence.MapStoreEntity
 import formsmanager.core.security.SecurityAware
 import formsmanager.core.security.groups.repository.GroupEntity
 import formsmanager.core.security.roles.domain.RoleId
+import formsmanager.core.typeconverter.RenderJoin
 import formsmanager.tenants.domain.TenantId
 import io.swagger.v3.oas.annotations.media.Schema
 import java.time.Instant
 import java.util.*
 
-data class GroupId(val value: UUID): CrudableObjectId<GroupId> {
+data class GroupId(override val value: UUID): CrudableObjectId<GroupId> {
     override fun toMapKey(): String {
         return value.toString()
+    }
+
+    override fun asString(): String {
+        return value.toString()
+    }
+
+    override fun type(): String {
+        return "group"
     }
 
     override fun compareTo(other: GroupId): Int {
@@ -47,6 +56,7 @@ data class Group(
 
         override val config: Map<String, Any?> = mapOf(),
 
+        @get:RenderJoin
         override val tenant: TenantId,
 
         override val owner: UUID

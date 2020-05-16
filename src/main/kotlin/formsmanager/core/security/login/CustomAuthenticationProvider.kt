@@ -1,7 +1,7 @@
 package formsmanager.core.security.login
 
-import formsmanager.core.security.shiro.realm.LoginToken
 import formsmanager.core.ifDebugEnabled
+import formsmanager.core.security.shiro.realm.LoginToken
 import formsmanager.users.service.UserService
 import io.micronaut.http.HttpRequest
 import io.micronaut.security.authentication.*
@@ -41,7 +41,7 @@ class CustomAuthenticationProvider(
         val identity: LoginIdentity = authenticationRequest.identity as LoginIdentity
         val password: CharArray = authenticationRequest.secret as CharArray
 
-        return userService.getByEmail(identity.username, identity.tenant)
+        return userService.getByUsername(identity.username, identity.tenant)
                 .onErrorResumeNext {
                     // @TODO review
                     // Could not find the email in users
@@ -84,7 +84,7 @@ class CustomAuthenticationProvider(
                         // LOGIN SUCCESS:
                         //Requires the cast for compiler to pick it up correctly
                         // Returns the UserDetails required by Micronaut
-                        UserDetails(ue.id.toString(), null) as AuthenticationResponse
+                        UserDetails(ue.id.asString(), listOf()) as AuthenticationResponse
                     }
 
                 }.toFlowable().onErrorReturn {

@@ -10,6 +10,7 @@ import io.micronaut.http.HttpResponse
 import io.micronaut.http.annotation.*
 import io.reactivex.Single
 import org.apache.shiro.authz.AuthorizationException
+import org.apache.shiro.authz.annotation.RequiresAuthentication
 import org.apache.shiro.authz.annotation.RequiresGuest
 import org.apache.shiro.subject.Subject
 import org.slf4j.Logger
@@ -17,8 +18,8 @@ import org.slf4j.LoggerFactory
 
 
 @Controller("/tenant")
-//@RequiresAuthentication
-@RequiresGuest
+@RequiresAuthentication
+//@RequiresGuest
 class TenantController(
         private val tenantService: TenantService
 ) {

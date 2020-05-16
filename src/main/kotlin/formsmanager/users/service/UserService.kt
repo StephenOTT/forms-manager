@@ -66,9 +66,9 @@ class UserService(
         }
     }
 
-    fun getByEmail(email: String, tenantId: TenantId, subject: Subject? = null): Single<User> {
+    fun getByUsername(username: String, tenantId: TenantId, subject: Subject? = null): Single<User> {
         return userRepository.get(Predicate {
-            it.value.tenant == tenantId && it.value.emailInfo.email == email
+            it.value.tenant == tenantId && it.value.username == username
         }).flatMap { user ->
             subject.checkAuthorization("users:read:${user.tenant}:${user.id}").map {
                 user

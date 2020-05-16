@@ -10,9 +10,17 @@ import java.time.Instant
 import java.util.*
 
 
-data class TenantId(val value: UUID): CrudableObjectId<TenantId> {
+data class TenantId(override val value: UUID): CrudableObjectId<TenantId> {
     override fun toMapKey(): String {
         return value.toString()
+    }
+
+    override fun asString(): String {
+        return value.toString()
+    }
+
+    override fun type(): String {
+        return "tenant"
     }
 
     override fun compareTo(other: TenantId): Int {

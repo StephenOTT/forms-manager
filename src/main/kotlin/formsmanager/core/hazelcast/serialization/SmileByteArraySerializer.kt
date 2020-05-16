@@ -1,6 +1,8 @@
 package formsmanager.core.hazelcast.serialization
 
+import com.fasterxml.jackson.databind.ObjectMapper
 import com.hazelcast.nio.serialization.ByteArraySerializer
+import javax.inject.Named
 import javax.inject.Singleton
 
 /**
@@ -8,10 +10,8 @@ import javax.inject.Singleton
  */
 @Singleton
 class SmileByteArraySerializer(
-        private val binaryMapper: JacksonSmileSerialization
+    @param:Named("smile") private val mapper: ObjectMapper
 ) : ByteArraySerializer<Any> {
-
-    private val smileMapper = binaryMapper.smileMapper
 
     override fun getTypeId(): Int {
         return 666
@@ -23,10 +23,10 @@ class SmileByteArraySerializer(
 
     override fun write(`object`: Any): ByteArray {
         val wrapper = DataWrapper(`object`::class.java.canonicalName!!, `object`)
-        return smileMapper.writeValueAsBytes(wrapper)
+        return mapper.writeValueAsBytes(wrapper)
     }
 
     override fun read(buffer: ByteArray): Any? {
-        return smileMapper.readValue(buffer, DataWrapper::class.java).data
+        return mapper.readValue(buffer, DataWrapper::class.java).data
     }
 }

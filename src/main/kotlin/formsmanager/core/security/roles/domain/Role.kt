@@ -11,9 +11,17 @@ import java.lang.IllegalArgumentException
 import java.time.Instant
 import java.util.*
 
-data class RoleId(val value: UUID): CrudableObjectId<RoleId> {
+data class RoleId(override val value: UUID): CrudableObjectId<RoleId> {
     override fun toMapKey(): String {
         return value.toString()
+    }
+
+    override fun asString(): String {
+        return value.toString()
+    }
+
+    override fun type(): String {
+        return "role"
     }
 
     override fun compareTo(other: RoleId): Int {

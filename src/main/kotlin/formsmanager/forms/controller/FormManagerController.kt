@@ -7,19 +7,19 @@ import formsmanager.core.hazelcast.query.checkAllowedSortProperties
 import formsmanager.forms.domain.*
 import formsmanager.forms.service.FormService
 import formsmanager.forms.submission.FormSubmissionResponse
-import formsmanager.tenants.service.TenantService
 import formsmanager.forms.validator.FormSubmission
 import formsmanager.forms.validator.FormSubmissionData
 import formsmanager.forms.validator.FormValidationException
 import formsmanager.forms.validator.ValidationResponseInvalid
 import formsmanager.tenants.domain.TenantId
+import formsmanager.tenants.service.TenantService
 import io.micronaut.data.model.Pageable
 import io.micronaut.http.HttpRequest
 import io.micronaut.http.HttpResponse
 import io.micronaut.http.annotation.*
 import io.reactivex.Single
 import org.apache.shiro.authz.AuthorizationException
-import org.apache.shiro.authz.annotation.RequiresGuest
+import org.apache.shiro.authz.annotation.RequiresAuthentication
 import org.apache.shiro.subject.Subject
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -27,8 +27,8 @@ import java.util.*
 
 
 @Controller("/form/{tenantName}")
-//@RequiresAuthentication
-@RequiresGuest
+@RequiresAuthentication
+//@RequiresGuest
 class FormManagerController(
         private val formService: FormService,
         private val tenantService: TenantService
@@ -108,7 +108,7 @@ class FormManagerController(
     ): Single<HttpResponse<FormSchema>> {
         return formService.existsByName(formName, tenantName, true)
                 .flatMap {
-                    formService.getSchema(FormSchemaEntityId(schemaUuid))
+                    formService.getSchema(FormSchemaId(schemaUuid))
                 }.map {
                     HttpResponse.ok(it)
                 }
@@ -122,7 +122,7 @@ class FormManagerController(
     ): Single<HttpResponse<FormioFormSchema>> {
         return formService.existsByName(formName, tenantName, true)
                 .flatMap {
-                    formService.getSchema(FormSchemaEntityId(schemaUuid))
+                    formService.getSchema(FormSchemaId(schemaUuid))
                 }.map {
                     HttpResponse.ok(it.schema)
                 }
@@ -168,7 +168,7 @@ class FormManagerController(
                      @Body formSchema: FormSchemaModifier,
                      @QueryValue isDefault: Boolean?
     ): Single<HttpResponse<FormSchema>> {
-        return formService.getSchema(FormSchemaEntityId(schemaUuid)).flatMap { fse ->
+        return formService.getSchema(FormSchemaId(schemaUuid)).flatMap { fse ->
             formService.updateFormSchema(
                     formSchema.toFormSchema(fse.id, fse.formId),
                     isDefault ?: false,
@@ -240,7 +240,7 @@ class FormManagerController(
                                   @QueryValue dryRun: Boolean?
     ): Single<HttpResponse<FormSubmissionResponse>> {
         return formService.getFormIdByName(formName, tenantName).flatMap {
-            formService.getSchema(FormSchemaEntityId(schemaUuid))
+            formService.getSchema(FormSchemaId(schemaUuid))
 
         }.flatMap {
             submission.map { submissionData ->

@@ -12,9 +12,17 @@ import io.swagger.v3.oas.annotations.media.Schema
 import java.time.Instant
 import java.util.*
 
-data class UserId(val value: UUID): CrudableObjectId<UserId> {
+data class UserId(override val value: UUID): CrudableObjectId<UserId> {
     override fun toMapKey(): String {
         return value.toString()
+    }
+
+    override fun asString(): String {
+        return value.toString()
+    }
+
+    override fun type(): String {
+        return "user"
     }
 
     override fun compareTo(other: UserId): Int {
@@ -28,6 +36,8 @@ data class User(
         override val id: UserId,
 
         override val ol: Long = 0,
+
+        val username: String,
 
         val emailInfo: EmailInfo,
 
@@ -52,6 +62,7 @@ data class User(
         fun newUser(email: String, tenant: TenantId, groups: Set<GroupId>, id: UserId = UserId(UuidUtil.newSecureUUID())): User {
             return User(
                     id = id,
+                    username = email,
                     emailInfo = EmailInfo(email),
                     passwordInfo = PasswordInfo(resetPasswordInfo = ResetPasswordInfo()),
                     accountControlInfo = AccountControlInfo(),
@@ -66,6 +77,7 @@ data class User(
         fun newUser(email: String, passwordHash: String, salt: String, algorithmName: String, tenant: TenantId, groups: Set<GroupId>, id: UserId = UserId(UuidUtil.newSecureUUID())): User {
             return User(
                     id = id,
+                    username = email,
                     emailInfo = EmailInfo(email = email, emailConfirmed = true),
                     passwordInfo = PasswordInfo(
                             passwordHash = passwordHash,

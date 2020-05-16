@@ -70,6 +70,7 @@ todo:
 1. Create a user Entity update page for Admin and for Regular users.
 1. ** deal with scenarios of who owns tenants and groups: and how someone can assign the owner of an object: (Likely a permission)**    
 1. ** Convert to modern binary serialization to replace Serialization for Shiro Cache (Using Hz) **  
+1. Create a new PrincipalCollection class.  Dont use SimplePrincipalCollection as it does not have good enough typing...
 
 Python execution service:
 

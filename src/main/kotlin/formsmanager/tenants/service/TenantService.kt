@@ -93,6 +93,12 @@ class TenantService(
             ).single()
         }
     }
+    
+    fun getTenantNameByTenantId(tenantId: TenantId): Single<String> {
+        return get(tenantId).map {
+            it.name
+        }
+    }
 
     fun exists(tenantMapKey: TenantId, mustExist: Boolean = false): Single<Boolean> {
         return tenantHazelcastRepository.exists(tenantMapKey).map {

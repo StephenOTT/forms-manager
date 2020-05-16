@@ -6,7 +6,7 @@ import formsmanager.core.security.shiro.checkAuthorization
 import formsmanager.forms.domain.Form
 import formsmanager.forms.domain.FormId
 import formsmanager.forms.domain.FormSchema
-import formsmanager.forms.domain.FormSchemaEntityId
+import formsmanager.forms.domain.FormSchemaId
 import formsmanager.forms.respository.FormHazelcastRepository
 import formsmanager.forms.respository.FormSchemaHazelcastRepository
 import formsmanager.forms.submission.FormSubmissionResponse
@@ -117,7 +117,7 @@ class FormService(
         }
     }
 
-    fun formSchemaExists(formSchemaMapKey: FormSchemaEntityId, mustExist: Boolean = false): Single<Boolean> {
+    fun formSchemaExists(formSchemaMapKey: FormSchemaId, mustExist: Boolean = false): Single<Boolean> {
         return formSchemaHazelcastRepository.exists(formSchemaMapKey).map {
             if (mustExist) {
                 require(it, lazyMessage = { "Form Schema does not exist." })
@@ -255,7 +255,7 @@ class FormService(
         }
     }
 
-    fun getSchema(schemaMapKey: FormSchemaEntityId, subject: Subject? = null): Single<FormSchema> {
+    fun getSchema(schemaMapKey: FormSchemaId, subject: Subject? = null): Single<FormSchema> {
         return formSchemaHazelcastRepository.get(schemaMapKey)
                 .onErrorResumeNext {
                     Single.error(IllegalArgumentException("Cannot find schema id"))
@@ -317,7 +317,7 @@ class FormService(
     /**
      * Service for handling end-to-end form submission: Submission, Validation, Routing to Submission Handler, and response from submission handler
      */
-    fun processFormSubmission(formMapKey: FormId, formSchemaMapKey: FormSchemaEntityId, formSubmission: FormSubmission, dryRun: Boolean = false, subject: Subject? = null): Single<FormSubmissionResponse> {
+    fun processFormSubmission(formMapKey: FormId, formSchemaMapKey: FormSchemaId, formSubmission: FormSubmission, dryRun: Boolean = false, subject: Subject? = null): Single<FormSubmissionResponse> {
         // @TODO refactor to reduce amount of recalls to getSchema, getForm, etc, as Getting Schema also gets the Form.
         // Subject is not used for getSchema and getForm because we use this data to create the dynmaic permission
         return getSchema(formSchemaMapKey).flatMap { fse ->

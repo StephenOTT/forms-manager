@@ -1,5 +1,7 @@
 package formsmanager.core.security.login
 
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize
+import formsmanager.core.typeconverter.TenantNameToTenantIdDeserializer
 import formsmanager.tenants.domain.TenantId
 import io.micronaut.context.annotation.Replaces
 import io.micronaut.context.annotation.Requires
@@ -10,13 +12,9 @@ import io.micronaut.http.HttpRequest
 import io.micronaut.http.HttpResponse
 import io.micronaut.http.HttpStatus
 import io.micronaut.http.MediaType
-import io.micronaut.http.annotation.Body
-import io.micronaut.http.annotation.Consumes
-import io.micronaut.http.annotation.Controller
-import io.micronaut.http.annotation.Post
+import io.micronaut.http.annotation.*
 import io.micronaut.security.annotation.Secured
 import io.micronaut.security.authentication.*
-import io.micronaut.security.authentication.UsernamePasswordCredentials
 import io.micronaut.security.endpoints.LoginController
 import io.micronaut.security.endpoints.LoginControllerConfigurationProperties
 import io.micronaut.security.event.LoginFailedEvent
@@ -26,6 +24,7 @@ import io.micronaut.security.rules.SecurityRule
 import io.micronaut.validation.Validated
 import io.reactivex.Flowable
 import io.reactivex.Single
+import net.minidev.json.annotate.JsonIgnore
 import java.io.Serializable
 import javax.validation.Valid
 
@@ -68,6 +67,13 @@ class CustomLoginController(
 
         }.first(HttpResponse.status<Unit>(HttpStatus.UNAUTHORIZED))
     }
+
+    @Error
+    fun formValidationError(request: HttpRequest<*>, exception: Exception): HttpResponse<String> {
+        //@TODO refactor this with proper error message.
+        exception.printStackTrace()
+        return HttpResponse.serverError(exception.message)
+    }
 }
 
 
@@ -80,13 +86,16 @@ class CustomLoginController(
 data class TenantBasedCredentials(
         val username: String,
         val password: CharArray,
+        @field:JsonDeserialize(using = TenantNameToTenantIdDeserializer::class)
         val tenant: TenantId
 ) : Serializable, AuthenticationRequest<LoginIdentity, CharArray> {
 
+    @JsonIgnore
     override fun getIdentity(): LoginIdentity {
         return LoginIdentity(username, tenant)
     }
 
+    @JsonIgnore
     override fun getSecret(): CharArray {
         return password
     }

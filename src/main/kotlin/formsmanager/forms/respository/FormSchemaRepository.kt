@@ -13,7 +13,7 @@ import formsmanager.core.hazelcast.query.PagingUtils.Companion.createPagingPredi
 import formsmanager.core.hazelcast.query.beanDescription
 import formsmanager.forms.domain.FormId
 import formsmanager.forms.domain.FormSchema
-import formsmanager.forms.domain.FormSchemaEntityId
+import formsmanager.forms.domain.FormSchemaId
 import io.micronaut.data.jdbc.annotation.JdbcRepository
 import io.micronaut.data.model.Pageable
 import io.micronaut.data.model.query.builder.sql.Dialect
@@ -26,7 +26,7 @@ import javax.persistence.Entity
  * Entity for storage in a IMDG MapStore for FormSchemaEntity
  */
 @Entity
-class FormSchemaEntity(key: FormSchemaEntityId,
+class FormSchemaEntity(key: FormSchemaId,
                        classId: String,
                        value: FormSchema) : MapStoreEntity<FormSchema>(key.toMapKey(), classId, value)
 

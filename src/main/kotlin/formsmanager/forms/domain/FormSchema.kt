@@ -13,12 +13,20 @@ import io.swagger.v3.oas.annotations.media.Schema
 import java.time.Instant
 import java.util.*
 
-data class FormSchemaEntityId(val value: UUID): CrudableObjectId<FormSchemaEntityId> {
+data class FormSchemaId(override val value: UUID): CrudableObjectId<FormSchemaId> {
     override fun toMapKey(): String {
         return value.toString()
     }
 
-    override fun compareTo(other: FormSchemaEntityId): Int {
+    override fun asString(): String {
+        return value.toString()
+    }
+
+    override fun type(): String {
+        return "form-schema"
+    }
+
+    override fun compareTo(other: FormSchemaId): Int {
         return value.compareTo(other.value)
     }
 }
@@ -26,7 +34,7 @@ data class FormSchemaEntityId(val value: UUID): CrudableObjectId<FormSchemaEntit
 @Schema
 @Introspected
 data class FormSchema(
-        override val id: FormSchemaEntityId,
+        override val id: FormSchemaId,
 
         override val ol: Long = 0,
 
@@ -67,7 +75,7 @@ data class FormSchemaCreator(
 
         val enabled: Boolean = true
 ){
-    fun toFormSchema(id: FormSchemaEntityId = FormSchemaEntityId(UuidUtil.newSecureUUID()), formMapKey: FormId): FormSchema {
+    fun toFormSchema(id: FormSchemaId = FormSchemaId(UuidUtil.newSecureUUID()), formMapKey: FormId): FormSchema {
         return FormSchema(
                 id = id,
                 ol = ol,
@@ -93,7 +101,7 @@ data class FormSchemaModifier(
 
         val enabled: Boolean = true
 ){
-    fun toFormSchema(id: FormSchemaEntityId, formMapKey: FormId): FormSchema {
+    fun toFormSchema(id: FormSchemaId, formMapKey: FormId): FormSchema {
         return FormSchema(
                 id = id,
                 ol = ol,

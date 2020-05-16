@@ -1,11 +1,11 @@
-package formsmanager.core.hazelcast.serialization
+package formsmanager.core.hazelcast.map.persistence.serialization
 
 import com.fasterxml.jackson.annotation.JsonInclude
+import com.fasterxml.jackson.core.JsonFactory
 import com.fasterxml.jackson.core.JsonGenerator
 import com.fasterxml.jackson.core.JsonParser
 import com.fasterxml.jackson.databind.*
 import com.fasterxml.jackson.databind.ObjectMapper.DefaultTyping
-import com.fasterxml.jackson.dataformat.smile.SmileFactory
 import io.micronaut.context.annotation.Factory
 import io.micronaut.jackson.JacksonConfiguration
 import java.text.SimpleDateFormat
@@ -14,22 +14,14 @@ import javax.inject.Named
 import javax.inject.Singleton
 
 @Factory
-class JsonSmileFactory{
-//    https://github.com/micronaut-projects/micronaut-core/issues/3247
-//    @Singleton
-//    @Named("smile")
-//    fun smileFactory(): SmileFactory{
-//        return SmileFactory()
-//    }
-
-    private val factory = SmileFactory()
+class JacksonDbSerializationFactory{
 
     @Singleton
-    @Named("smile")
-    fun smileObjectMapper(modules: List<com.fasterxml.jackson.databind.Module>,
+    @Named("db")
+    fun dbObjectMapper(modules: List<com.fasterxml.jackson.databind.Module>,
                           jacksonConfiguration: JacksonConfiguration?): ObjectMapper {
         return setupMapper(
-                ObjectMapper(SmileFactory()).findAndRegisterModules().registerModules(modules),
+                ObjectMapper(JsonFactory()).findAndRegisterModules().registerModules(modules),
                 jacksonConfiguration
         )
     }

@@ -10,9 +10,17 @@ import io.swagger.v3.oas.annotations.media.Schema
 import java.time.Instant
 import java.util.*
 
-data class FormId(val value: UUID): CrudableObjectId<FormId> {
+data class FormId(override val value: UUID): CrudableObjectId<FormId> {
     override fun toMapKey(): String {
         return value.toString()
+    }
+
+    override fun asString(): String {
+        return value.toString()
+    }
+
+    override fun type(): String {
+        return "form"
     }
 
     override fun compareTo(other: FormId): Int {
@@ -32,7 +40,7 @@ data class Form(
 
         val description: String? = null,
 
-        val defaultSchema: FormSchemaEntityId? = null,
+        val defaultSchema: FormSchemaId? = null,
 
         val type: FormType = FormType.FORMIO,
 
@@ -70,7 +78,7 @@ data class FormCreator(
 
         var description: String? = null,
 
-        var defaultSchema: FormSchemaEntityId? = null,
+        var defaultSchema: FormSchemaId? = null,
 
         val data: Map<String, Any?> = mapOf(),
 
@@ -108,7 +116,7 @@ data class FormModifier(
 
         var description: String? = null,
 
-        var defaultSchema: FormSchemaEntityId? = null,
+        var defaultSchema: FormSchemaId? = null,
 
         val data: Map<String, Any?> = mapOf(),
 

@@ -3,7 +3,6 @@ package formsmanager.core.security.shiro.principal
 import formsmanager.tenants.domain.TenantId
 import formsmanager.users.domain.UserId
 import java.io.Serializable
-import java.util.*
 
 /**
  * Provides a Shiro Principal for storage of primary principal info.
