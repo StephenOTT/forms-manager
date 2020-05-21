@@ -50,6 +50,11 @@ dependencies {
     kapt("io.micronaut:micronaut-validation")
     implementation("io.micronaut:micronaut-validation")
 
+    implementation(enforcedPlatform("org.camunda.bpm:camunda-bom:7.12.0"))
+    implementation("org.camunda.bpm:camunda-engine")
+
+//    implementation("org.camunda.bpm:camunda-external-task-client:1.3.0")
+
     kaptTest("io.micronaut:micronaut-inject-java")
 
     implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlinVersion")
@@ -69,7 +74,7 @@ dependencies {
 
     kapt("io.micronaut.data:micronaut-data-processor:$micronautDataVersion")
     implementation("io.micronaut.data:micronaut-data-jdbc:$micronautDataVersion")
-    runtimeOnly("com.h2database:h2")
+    runtimeOnly("com.h2database:h2:1.4.200")
     runtimeOnly("io.micronaut.configuration:micronaut-jdbc-hikari")
     compileOnly("jakarta.persistence:jakarta.persistence-api:2.2.2")
 
