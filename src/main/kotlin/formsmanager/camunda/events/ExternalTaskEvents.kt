@@ -1,13 +1,13 @@
 package formsmanager.camunda.events
 
-import org.camunda.bpm.engine.externaltask.ExternalTask
-
-interface ExternalTaskEvent : CamundaEvent
+interface ExternalTaskEvent : CamundaEvent{
+    val taskId: String
+}
 
 data class ExternalTaskCreated(
-        val task: ExternalTask
+        override val taskId: String
 ) : ExternalTaskEvent
 
 data class ExternalTaskUnlocked(
-        val taskId: String
+        override val taskId: String
 ) : ExternalTaskEvent

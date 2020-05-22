@@ -5,6 +5,7 @@ import formsmanager.camunda.events.ExternalTaskCreated
 import formsmanager.camunda.events.ExternalTaskUnlocked
 import formsmanager.core.ifDebugEnabled
 import io.reactivex.BackpressureStrategy
+import io.reactivex.Completable
 import io.reactivex.Observable
 import io.reactivex.schedulers.Schedulers
 import org.camunda.bpm.engine.ProcessEngine
@@ -16,13 +17,15 @@ import java.util.concurrent.TimeUnit
 import javax.inject.Singleton
 
 @Singleton
-class ExternalTaskReactiveHandler(
+class HttpExternalTaskReactiveHandler(
         private val events: CamundaReactiveEvents,
         private val engine: ProcessEngine,
-        private val subscriptions: ConcurrentLinkedQueue<ExternalTaskSubscription>
+        private val subscriptions: ConcurrentLinkedQueue<ExternalTaskSubscription>,
+        private val handlerConfiguration: ExternalTaskHandlerConfiguration,
+        private val cycle: HttpRequestLifecycle
 ) {
 
-    private val log = LoggerFactory.getLogger(ExternalTaskReactiveHandler::class.java)
+    private val log = LoggerFactory.getLogger(HttpExternalTaskReactiveHandler::class.java)
 
     // Future optimization to use: https://forum.camunda.org/t/lock-external-task-by-id/5620/4
 
@@ -33,30 +36,41 @@ class ExternalTaskReactiveHandler(
     val externalTaskCreatedEventHandler = events.externalTaskEvents
             .subscribeOn(Schedulers.io())
             .toFlowable(BackpressureStrategy.LATEST)
-            .onBackpressureBuffer(100000)
+            .onBackpressureBuffer(handlerConfiguration.createdEventBuffer)
             .filter { it is ExternalTaskCreated }
             .doOnNext {
-                log.ifDebugEnabled { "Task Created Event Handler: Create Event received for taskId: ${(it as ExternalTaskCreated).task.id}" }
+                log.ifDebugEnabled { "Task Created Event Handler: Create Event received for taskId: ${it.taskId}" }
             }.forEach { taskEvent ->
+                val task = engine.externalTaskService
+                        .createExternalTaskQuery()
+                        .externalTaskId(taskEvent.taskId)
+                        .singleResult()
 
-                subscriptions.firstOrNull { sub ->
+                if (task == null) {
+                    log.error("Unable to process ExternalTaskCreated event for task ${taskEvent.taskId}: Could not find taskId in Camunda DB.")
 
-                    if (!(sub as HttpBasedExternalTaskSubscription).closeFuture.isDone) {
-                        // Check each topic the subscription has
-                        sub.topics.any { td ->
-                            checkExternalTaskMatchesTopicDefinition((taskEvent as ExternalTaskCreated).task, td)
+                } else {
+                    subscriptions.firstOrNull { sub ->
+                        if (!sub.requestFuture.isDone) {
+                            // Check each topic the subscription has
+                            sub.topics.any { td ->
+                                checkExternalTaskMatchesTopicDefinition(task, td)
+                            }
+                        } else {
+                            // The subscription was not active/ channel was closed
+                            // @TODO consider adding a removal from the list/queue trigger
+                            false
                         }
-                    } else {
-                        // The subscription was not active/ channel was closed
-                        // @TODO consider adding a removal from the list/queue trigger
-                        false
-                    }
+                    }?.run {
+                        val lockedTask = fetchAndLock(this)
 
-                }?.run {
-                    val task = fetchAndLock(this)
-                    if (task.isNotEmpty()) {
-                        provideResponse(FetchAndLockResponse(task))
-                        subscriptions.remove(this)
+                        if (lockedTask.isNotEmpty()) {
+                            Completable.fromAction {
+                                provideResponse(FetchAndLockResponse(lockedTask))
+                            }.andThen {
+                                subscriptions.remove(this)
+                            }.subscribeOn(Schedulers.io()).subscribe()
+                        }
                     }
                 }
             }
@@ -64,34 +78,42 @@ class ExternalTaskReactiveHandler(
     val externalTaskUnlockedEventHandler = events.externalTaskEvents
             .subscribeOn(Schedulers.io())
             .toFlowable(BackpressureStrategy.LATEST)
-            .onBackpressureBuffer(10000)
+            .onBackpressureBuffer(handlerConfiguration.unlockedEventBuffer)
             .filter { it is ExternalTaskUnlocked }
             .doOnNext {
                 log.ifDebugEnabled { "Task Created Event Handler: Create Event received for taskId: ${(it as ExternalTaskUnlocked).taskId}" }
             }
             .forEach { taskEvent ->
-                val sourceTask = engine.externalTaskService.createExternalTaskQuery()
-                        .externalTaskId((taskEvent as ExternalTaskUnlocked).taskId)
+                val task = engine.externalTaskService
+                        .createExternalTaskQuery()
+                        .externalTaskId(taskEvent.taskId)
                         .singleResult()
 
-                subscriptions.firstOrNull { sub ->
-                    if (!(sub as HttpBasedExternalTaskSubscription).closeFuture.isDone) {
-                        // Check each topic the subscription has
-                        sub.topics.any { td ->
-                            checkExternalTaskMatchesTopicDefinition(sourceTask, td)
-                        }
-                    } else {
-                        // The subscription was not active/ channel was closed
-                        // @TODO consider adding a removal from the list/queue trigger
-                        false
-                    }
+                if (task == null) {
+                    log.error("Unable to process ExternalTaskCreated event for task ${taskEvent.taskId}: Could not find taskId in Camunda DB.")
 
-                    // If there are subscriptions that match the external task, then:
-                }?.run {
-                    val tasks = fetchAndLock(this)
-                    if (tasks.isNotEmpty()) {
-                        provideResponse(FetchAndLockResponse(tasks))
-                        subscriptions.remove(this)
+                } else {
+                    subscriptions.firstOrNull { sub ->
+                        if (!sub.requestFuture.isDone) {
+                            // Check each topic the subscription has
+                            sub.topics.any { td ->
+                                checkExternalTaskMatchesTopicDefinition(task, td)
+                            }
+                        } else {
+                            // The subscription was not active/ channel was closed
+                            // @TODO consider adding a removal from the list/queue trigger
+                            false
+                        }
+                    }?.run {
+                        val lockedTask = fetchAndLock(this)
+
+                        if (lockedTask.isNotEmpty()) {
+                            Completable.fromAction {
+                                provideResponse(FetchAndLockResponse(lockedTask))
+                            }.andThen {
+                                subscriptions.remove(this)
+                            }.subscribeOn(Schedulers.io()).subscribe()
+                        }
                     }
                 }
             }
@@ -101,14 +123,16 @@ class ExternalTaskReactiveHandler(
      * Request's Channel being closed, and thus connection is no longer active.
      */
     val externalTaskLongPollRequestCleaner = Observable
-            .timer(30, TimeUnit.SECONDS)
+            .timer(handlerConfiguration.cleanClosedConnectionsCycle, TimeUnit.SECONDS)
             .repeat()
             .subscribeOn(Schedulers.io())
             .subscribe {
                 //@TODO consider moving the below to a parallel flowable for better performance?
                 subscriptions.removeIf {
-                    if (it is HttpBasedExternalTaskSubscription) {
-                        if (it.closeFuture.isDone){
+                    // HTTP request does not tell you when it has completed.
+                    // So some sort of other future is required
+                    if (it is HttpExternalTaskSubscription) {
+                        if (it.requestFuture.isDone) {
                             log.ifDebugEnabled { "Long-poll cleaning: Dead Channel detected: removing subscription for a worker ${it.workerId}" }
                             true
                         } else {
@@ -131,19 +155,20 @@ class ExternalTaskReactiveHandler(
      *
      */
     fun newSubscription(subscription: ExternalTaskSubscription): Observable<FetchAndLockResponse> {
-        // Perform a immediate fetchAndLock check
-            val tasks = fetchAndLock(subscription)
+        //lateinit the request future before doing
+        subscription.requestFuture = cycle.requestFuture
 
-            // If there were tasks that match the criteria then provide the response immediately
-            if (tasks.isNotEmpty()) {
-                subscription.provideResponse(FetchAndLockResponse(tasks))
+        val tasks = fetchAndLock(subscription)
 
-            } else {
-                // If no tasks were returned then add the subscription to the subscription queue/list
-                subscriptions.add(subscription)
-            }
-            return subscription.observable()
-                    .timeout(subscription.asyncResponseTimeout, TimeUnit.MILLISECONDS, Observable.just(FetchAndLockResponse(listOf())))
+        // If there were tasks that match the criteria then provide the response immediately
+        if (tasks.isNotEmpty()) {
+            subscription.provideResponse(FetchAndLockResponse(tasks))
+
+        } else {
+            // If no tasks were returned then add the subscription to the subscription queue/list
+            subscriptions.add(subscription)
+        }
+        return subscription.observable()
     }
 
     /**

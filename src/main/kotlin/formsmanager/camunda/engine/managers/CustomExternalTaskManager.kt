@@ -3,6 +3,8 @@ package formsmanager.camunda.engine.managers
 import formsmanager.camunda.events.CamundaReactiveEvents
 import formsmanager.camunda.events.ExternalTaskCreated
 import formsmanager.camunda.events.ExternalTaskEvent
+import io.reactivex.Completable
+import io.reactivex.schedulers.Schedulers
 import io.reactivex.subjects.PublishSubject
 import org.camunda.bpm.engine.impl.cfg.TransactionState
 import org.camunda.bpm.engine.impl.context.Context
@@ -25,12 +27,14 @@ class CustomExternalTaskManager : ExternalTaskManager() {
 
     override fun insert(externalTask: ExternalTaskEntity) {
         super.insert(externalTask)
-
+        val taskId = externalTask.id
         Context.getCommandContext().transactionContext
                 .addTransactionListener(TransactionState.COMMITTED) {
-                    externalTaskEvents.onNext(
-                            ExternalTaskCreated(externalTask)
-                    )
+                    Completable.fromAction {
+                        externalTaskEvents.onNext(
+                                ExternalTaskCreated(taskId)
+                        )
+                    }.subscribeOn(Schedulers.io()).subscribe()
                 }
     }
 }
