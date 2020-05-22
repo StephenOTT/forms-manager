@@ -1,6 +1,7 @@
-package formsmanager.camunda.externaltask
+package formsmanager.camunda.externaltask.controller
 
 import com.fasterxml.jackson.annotation.JsonValue
+import formsmanager.camunda.externaltask.subscription.HttpExternalTaskSubscription
 import org.camunda.bpm.engine.externaltask.LockedExternalTask
 
 data class FetchAndLockRequest(

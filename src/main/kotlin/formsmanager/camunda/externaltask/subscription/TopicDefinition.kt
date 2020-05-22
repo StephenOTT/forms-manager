@@ -1,4 +1,4 @@
-package formsmanager.camunda.externaltask
+package formsmanager.camunda.externaltask.subscription
 
 import io.micronaut.core.annotation.Introspected
 

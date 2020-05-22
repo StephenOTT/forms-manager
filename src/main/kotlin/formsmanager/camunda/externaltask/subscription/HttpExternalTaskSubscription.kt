@@ -1,5 +1,6 @@
-package formsmanager.camunda.externaltask
+package formsmanager.camunda.externaltask.subscription
 
+import formsmanager.camunda.externaltask.controller.FetchAndLockResponse
 import io.micronaut.core.annotation.Introspected
 import io.reactivex.subjects.AsyncSubject
 import net.minidev.json.annotate.JsonIgnore

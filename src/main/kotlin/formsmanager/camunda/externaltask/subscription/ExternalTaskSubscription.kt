@@ -1,5 +1,6 @@
-package formsmanager.camunda.externaltask
+package formsmanager.camunda.externaltask.subscription
 
+import formsmanager.camunda.externaltask.controller.FetchAndLockResponse
 import io.reactivex.Observable
 import io.reactivex.subjects.AsyncSubject
 import java.util.concurrent.Future

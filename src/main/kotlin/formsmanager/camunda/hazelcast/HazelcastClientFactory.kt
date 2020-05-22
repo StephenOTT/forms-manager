@@ -13,6 +13,7 @@ class HazelcastClientFactory {
 //
 //    @Singleton
 //    @Primary
+//    @Context
 //    fun clientConfig(): ClientConfig {
 //        return ClientClasspathYamlConfig("hazelcast.yml")
 //    }

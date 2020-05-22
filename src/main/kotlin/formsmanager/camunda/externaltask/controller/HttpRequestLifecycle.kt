@@ -1,4 +1,4 @@
-package formsmanager.camunda.externaltask
+package formsmanager.camunda.externaltask.controller
 
 import io.micronaut.context.annotation.Prototype
 import io.micronaut.runtime.http.scope.RequestScope

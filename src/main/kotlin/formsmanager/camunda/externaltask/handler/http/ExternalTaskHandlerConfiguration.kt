@@ -1,4 +1,4 @@
-package formsmanager.camunda.externaltask
+package formsmanager.camunda.externaltask.handler.http
 
 import io.micronaut.context.annotation.ConfigurationProperties
 import io.micronaut.core.bind.annotation.Bindable

@@ -1,6 +1,7 @@
-package formsmanager.camunda.externaltask
+package formsmanager.camunda.externaltask.controller
 
-import io.micronaut.http.HttpRequest
+import formsmanager.camunda.externaltask.handler.http.HttpExternalTaskReactiveHandler
+import formsmanager.camunda.externaltask.subscription.HttpExternalTaskSubscription
 import io.micronaut.http.HttpResponse
 import io.micronaut.http.annotation.Body
 import io.micronaut.http.annotation.Controller
@@ -74,14 +75,5 @@ class ExternalTaskController(
 //    fun setRetriesByQuery() {
 //
 //    }
-
-    @Post("/start-instance-by-Key")
-    fun startProcessInstanceByDefKey(request: HttpRequest<*>): Single<HttpResponse<String>> {
-        return Single.fromCallable {
-            engine.runtimeService.startProcessInstanceByKey("happy")
-        }.map {
-            HttpResponse.ok("processInstanceId: ${it.processInstanceId}")
-        }
-    }
 
 }
