@@ -14,6 +14,8 @@ import io.micronaut.context.ApplicationContext
 import io.micronaut.context.annotation.Context
 import io.micronaut.context.annotation.Factory
 import io.micronaut.context.annotation.Primary
+import org.camunda.bpm.engine.impl.history.event.*
+import org.camunda.bpm.engine.impl.persistence.entity.HistoricVariableInstanceEntity
 import org.slf4j.LoggerFactory
 import javax.inject.Named
 import javax.inject.Singleton
@@ -68,6 +70,26 @@ class JetConfiguration(
         val hConfig: Config = ClasspathYamlConfig("hazelcast.yml")
 
         val serializationConfig = SerializationConfig()
+
+        // Add overrides for Camunda serializations to ensure that the Jackson serializer is used.
+        serializationConfig
+                .addSerializerConfig(SerializerConfig().setImplementation(smileSerializer).setTypeClass(HistoricActivityInstanceEventEntity::class.java))
+                .addSerializerConfig(SerializerConfig().setImplementation(smileSerializer).setTypeClass(HistoricCaseActivityInstanceEventEntity::class.java))
+                .addSerializerConfig(SerializerConfig().setImplementation(smileSerializer).setTypeClass(HistoricCaseInstanceEventEntity::class.java))
+                .addSerializerConfig(SerializerConfig().setImplementation(smileSerializer).setTypeClass(HistoricDecisionEvaluationEvent::class.java))
+                .addSerializerConfig(SerializerConfig().setImplementation(smileSerializer).setTypeClass(HistoricDecisionInstanceEntity::class.java))
+                .addSerializerConfig(SerializerConfig().setImplementation(smileSerializer).setTypeClass(HistoricDetailEventEntity::class.java))
+                .addSerializerConfig(SerializerConfig().setImplementation(smileSerializer).setTypeClass(HistoricExternalTaskLogEntity::class.java))
+                .addSerializerConfig(SerializerConfig().setImplementation(smileSerializer).setTypeClass(HistoricExternalTaskLogEntity::class.java))
+                .addSerializerConfig(SerializerConfig().setImplementation(smileSerializer).setTypeClass(HistoricFormPropertyEventEntity::class.java))
+                .addSerializerConfig(SerializerConfig().setImplementation(smileSerializer).setTypeClass(HistoricIdentityLinkLogEventEntity::class.java))
+                .addSerializerConfig(SerializerConfig().setImplementation(smileSerializer).setTypeClass(HistoricIncidentEventEntity::class.java))
+                .addSerializerConfig(SerializerConfig().setImplementation(smileSerializer).setTypeClass(HistoricJobLogEvent::class.java))
+                .addSerializerConfig(SerializerConfig().setImplementation(smileSerializer).setTypeClass(HistoricProcessInstanceEventEntity::class.java))
+                .addSerializerConfig(SerializerConfig().setImplementation(smileSerializer).setTypeClass(HistoricTaskInstanceEventEntity::class.java))
+                .addSerializerConfig(SerializerConfig().setImplementation(smileSerializer).setTypeClass(UserOperationLogEntryEventEntity::class.java))
+                .addSerializerConfig(SerializerConfig().setImplementation(smileSerializer).setTypeClass(HistoricVariableInstanceEntity::class.java))
+
 
         val globalSerializer = GlobalSerializerConfig()
 //                .setOverrideJavaSerialization(true) // Make this a config

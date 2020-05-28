@@ -6,8 +6,10 @@ import com.fasterxml.jackson.core.JsonParser
 import com.fasterxml.jackson.databind.*
 import com.fasterxml.jackson.databind.ObjectMapper.DefaultTyping
 import com.fasterxml.jackson.dataformat.smile.SmileFactory
+import formsmanager.camunda.hazelcast.HistoricVariableInstanceEntitySmileMixIn
 import io.micronaut.context.annotation.Factory
 import io.micronaut.jackson.JacksonConfiguration
+import org.camunda.bpm.engine.impl.persistence.entity.HistoricVariableInstanceEntity
 import java.text.SimpleDateFormat
 import java.util.*
 import javax.inject.Named
@@ -29,12 +31,14 @@ class JsonSmileFactory{
     fun smileObjectMapper(modules: List<com.fasterxml.jackson.databind.Module>,
                           jacksonConfiguration: JacksonConfiguration?): ObjectMapper {
         return setupMapper(
-                ObjectMapper(SmileFactory()).findAndRegisterModules().registerModules(modules),
+                ObjectMapper(SmileFactory()).registerModules(modules),
                 jacksonConfiguration
         )
     }
 
     private fun setupMapper(mappedInSetup: ObjectMapper, jacksonConfiguration: JacksonConfiguration?): ObjectMapper{
+        // SPECIAL MIXIN FOR
+        mappedInSetup.addMixIn(HistoricVariableInstanceEntity::class.java, HistoricVariableInstanceEntitySmileMixIn::class.java)
 
         mappedInSetup.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
         mappedInSetup.configure(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY, true)

@@ -63,6 +63,7 @@ class ShiroMicronautSecurityService(
 
     fun createAnonymousSubject(): Subject{
         log.ifDebugEnabled { "Creating a Anonymous Shiro Subject" }
+        //@TODO review the use of DefaultSubjectContext
         return securityManager.createSubject(DefaultSubjectContext())
     }
 }

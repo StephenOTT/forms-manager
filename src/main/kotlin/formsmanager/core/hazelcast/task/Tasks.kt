@@ -1,8 +1,10 @@
 package formsmanager.core.hazelcast.task
 
+import com.fasterxml.jackson.annotation.JsonIgnore
 import com.hazelcast.core.HazelcastInstance
 import com.hazelcast.core.HazelcastInstanceAware
 import formsmanager.core.hazelcast.context.InjectAware
+import org.slf4j.LoggerFactory
 import java.util.concurrent.Callable
 import javax.inject.Inject
 
@@ -13,9 +15,14 @@ import javax.inject.Inject
 @InjectAware
 abstract class Task<R> : Callable<R>, HazelcastInstanceAware{
 
-    @Transient @Inject
-    private lateinit var hazelcast: HazelcastInstance
+    companion object {
+        internal val LOG = LoggerFactory.getLogger(Task::class.java)
+    }
 
+    @Transient @Inject
+    protected lateinit var hazelcast: HazelcastInstance
+
+    @JsonIgnore
     override fun setHazelcastInstance(hazelcastInstance: HazelcastInstance) {
         hazelcast = hazelcastInstance
     }
@@ -29,9 +36,14 @@ abstract class Task<R> : Callable<R>, HazelcastInstanceAware{
 @InjectAware
 abstract class TaskWithoutReturn : Runnable, HazelcastInstanceAware{
 
-    @Transient @Inject
-    private lateinit var hazelcast: HazelcastInstance
+    companion object {
+        internal val LOG = LoggerFactory.getLogger(TaskWithoutReturn::class.java)
+    }
 
+    @Transient @Inject @JsonIgnore
+    protected lateinit var hazelcast: HazelcastInstance
+
+    @JsonIgnore
     override fun setHazelcastInstance(hazelcastInstance: HazelcastInstance) {
         hazelcast = hazelcastInstance
     }

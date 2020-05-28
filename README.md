@@ -52,6 +52,15 @@ Notes:
 
 1. add expression handler to build custom dynmaic permissions for shiro wildcard https://stackoverflow.com/questions/2286648/named-placeholders-in-string-formatting
 
+1. InjectAware needs to be added to all Tasks.  The inherit does not work apply to the inject.. it would only inject on the extended properties
+
+1. There are 4 Serializers:
+   1. jackson used internally by Camunda
+   1. jackson created by Micronuat (with Singleton imports and the Application.yml configuration)
+   1. Jackson used for Smile: formsmanager.core.serialization.JacksonSmileSerialization.class
+   1. Jackson used for Map Store Persistence (JDBC persistence with Hazelcast Mapstore (How the data is stored as JSON in the DB)): formsmanager.core.map.persistence.serialization.JacksonDBSerializationFactory.class
+
+
 questions
 1. Member selection for distributed tasks: To only have specific nodes work on specific tasks.
  
@@ -71,6 +80,7 @@ todo:
 1. ** deal with scenarios of who owns tenants and groups: and how someone can assign the owner of an object: (Likely a permission)**    
 1. ** Convert to modern binary serialization to replace Serialization for Shiro Cache (Using Hz) **  
 1. Create a new PrincipalCollection class.  Dont use SimplePrincipalCollection as it does not have good enough typing...
+1. Create a Mixin Bean support to auto add mixins based on configs
 
 Python execution service:
 

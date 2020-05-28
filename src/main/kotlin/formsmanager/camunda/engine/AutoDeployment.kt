@@ -21,6 +21,7 @@ class AutoDeployment() {
         }.forEach {
             val deployment = engine.repositoryService.createDeployment()
                     .name("auto-deployment")
+                    .tenantId("someTenant")
                     .addInputStream(it.name, it.inputStream()) // must have .bpmn in the name
                     .deployWithResult()
             println("Deployed: ${deployment.deployedProcessDefinitions}")

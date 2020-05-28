@@ -21,7 +21,7 @@ class JacksonDbSerializationFactory{
     fun dbObjectMapper(modules: List<com.fasterxml.jackson.databind.Module>,
                           jacksonConfiguration: JacksonConfiguration?): ObjectMapper {
         return setupMapper(
-                ObjectMapper(JsonFactory()).findAndRegisterModules().registerModules(modules),
+                ObjectMapper(JsonFactory()).registerModules(modules),
                 jacksonConfiguration
         )
     }
