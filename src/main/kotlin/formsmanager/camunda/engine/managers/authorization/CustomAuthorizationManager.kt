@@ -1,4 +1,4 @@
-package formsmanager.camunda.engine.managers
+package formsmanager.camunda.engine.managers.authorization
 
 import formsmanager.core.security.shiro.jwt.JwtToken
 import org.apache.shiro.mgt.SecurityManager
