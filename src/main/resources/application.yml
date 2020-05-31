@@ -91,3 +91,11 @@ myapp:
         tenant: admin-tenant
         groups:
           - super-admin-group
+
+camunda:
+  custom:
+    history:
+      handlers:
+        enabled: true
+        composite:
+          enabled: true
