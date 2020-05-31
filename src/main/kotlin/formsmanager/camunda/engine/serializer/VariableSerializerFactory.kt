@@ -1,4 +1,4 @@
-package formsmanager.camunda.engine.variable
+package formsmanager.camunda.engine.serializer
 
 import formsmanager.camunda.engine.plugin.MicronautProcessEnginePlugin
 import io.micronaut.context.annotation.Factory
