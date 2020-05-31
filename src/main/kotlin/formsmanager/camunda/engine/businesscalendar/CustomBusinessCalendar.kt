@@ -100,16 +100,23 @@ interface CustomBusinessCalendar {
             return betweenHours(LocalTime.parse(start), LocalTime.parse(stop))
         }
 
-        fun isDayOfWeek(dayOfWeek: DayOfWeek): Predicate<ZonedDateTime> {
-            return Predicate { it.dayOfWeek == dayOfWeek }
+        fun isDayOfWeek(vararg dayOfWeek: DayOfWeek): Predicate<ZonedDateTime> {
+            return Predicate { submission -> dayOfWeek.all { DayOfWeek.from(submission) == it } }
         }
 
-        fun isDayOfWeek(dayOfWeek: String): Predicate<ZonedDateTime> {
-            return isDayOfWeek(DayOfWeek.valueOf(dayOfWeek.toUpperCase()))
+        fun isDayOfWeek(vararg dayOfWeek: String): Predicate<ZonedDateTime> {
+            val months = dayOfWeek.map { DayOfWeek.valueOf(it.toUpperCase()) }
+            return isDayOfWeek(*months.toTypedArray())
         }
 
-        fun inMonth(month: Month): Predicate<ZonedDateTime> {
-            return Predicate { it.month == month }
+        fun isMonth(vararg dates: Month): Predicate<ZonedDateTime> {
+
+            return Predicate { submission -> dates.all { Month.from(submission) == it } }
+        }
+
+        fun isMonth(vararg dates: String): Predicate<ZonedDateTime> {
+            val months = dates.map { Month.valueOf(it.toUpperCase()) }
+            return isMonth(*months.toTypedArray())
         }
 
         fun isWeekend(weekend: Array<DayOfWeek> = arrayOf(DayOfWeek.SATURDAY, DayOfWeek.SUNDAY)): Predicate<ZonedDateTime> {
