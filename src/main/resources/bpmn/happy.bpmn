@@ -2,12 +2,16 @@
 <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_1rhin5k" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="3.7.0">
   <bpmn:process id="happy" name="Happy" isExecutable="true">
     <bpmn:startEvent id="StartEvent_1">
+      <bpmn:extensionElements>
+        <camunda:executionListener delegateExpression="${MyDel}" event="start" />
+      </bpmn:extensionElements>
       <bpmn:outgoing>Flow_0okmb86</bpmn:outgoing>
     </bpmn:startEvent>
     <bpmn:sequenceFlow id="Flow_0okmb86" sourceRef="StartEvent_1" targetRef="Activity_1pdki17" />
     <bpmn:sequenceFlow id="Flow_00x3xjp" sourceRef="Activity_1pdki17" targetRef="Activity_05p1z73" />
     <bpmn:serviceTask id="Activity_1pdki17" name="ET1" camunda:type="external" camunda:topic="topic1">
       <bpmn:incoming>Flow_0okmb86</bpmn:incoming>
+      <bpmn:incoming>Flow_00m3t6g</bpmn:incoming>
       <bpmn:outgoing>Flow_00x3xjp</bpmn:outgoing>
     </bpmn:serviceTask>
     <bpmn:endEvent id="Event_1bg23ez">
@@ -21,14 +25,20 @@
     <bpmn:boundaryEvent id="Event_1nhkr5j" cancelActivity="false" attachedToRef="Activity_1pdki17">
       <bpmn:outgoing>Flow_0246uam</bpmn:outgoing>
       <bpmn:timerEventDefinition id="TimerEventDefinition_1geocry">
-        <bpmn:timeCycle xsi:type="bpmn:tFormalExpression">(MyCustom1)0 0 9 ? * MON-FRI *</bpmn:timeCycle>
+        <bpmn:timeCycle xsi:type="bpmn:tFormalExpression">(StdWorkWeek)0 0 9 ? * MON-FRI *</bpmn:timeCycle>
       </bpmn:timerEventDefinition>
     </bpmn:boundaryEvent>
     <bpmn:endEvent id="Event_1ukwxu2">
       <bpmn:incoming>Flow_0246uam</bpmn:incoming>
     </bpmn:endEvent>
     <bpmn:sequenceFlow id="Flow_0246uam" sourceRef="Event_1nhkr5j" targetRef="Event_1ukwxu2" />
+    <bpmn:sequenceFlow id="Flow_00m3t6g" sourceRef="Event_1muk18m" targetRef="Activity_1pdki17" />
+    <bpmn:startEvent id="Event_1muk18m">
+      <bpmn:outgoing>Flow_00m3t6g</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MessageEventDefinition_02ncldy" messageRef="Message_1s1rfqw" />
+    </bpmn:startEvent>
   </bpmn:process>
+  <bpmn:message id="Message_1s1rfqw" name="someMessage" />
   <bpmndi:BPMNDiagram id="BPMNDiagram_1">
     <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="happy">
       <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="StartEvent_1">
@@ -66,6 +76,15 @@
         <di:waypoint x="380" y="100" />
         <di:waypoint x="452" y="100" />
       </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_00m3t6g_di" bpmnElement="Flow_00m3t6g">
+        <di:waypoint x="188" y="130" />
+        <di:waypoint x="234" y="130" />
+        <di:waypoint x="234" y="197" />
+        <di:waypoint x="280" y="197" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="Event_0sk95s1_di" bpmnElement="Event_1muk18m">
+        <dc:Bounds x="152" y="112" width="36" height="36" />
+      </bpmndi:BPMNShape>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>
 </bpmn:definitions>

@@ -12,7 +12,7 @@ class FormSubmissionValidatorTask(
 ): Task<ValidationResponse>(){
 
     @Inject @Transient
-    private lateinit var formService: FormService
+    lateinit var formService: FormService
 
     override fun call(): ValidationResponse {
         return formService.validateFormSubmission(formSubmission)

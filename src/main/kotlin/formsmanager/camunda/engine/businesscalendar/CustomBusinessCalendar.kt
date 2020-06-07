@@ -57,6 +57,7 @@ interface CustomBusinessCalendar {
          * @exception IllegalArgumentException if calendar was detected but unable to parse
          */
         fun getCustomCalendar(duedateDescription: String): CustomCalendarDescription? {
+            //@TODO refactor the startsWith parsing
             return if (duedateDescription.startsWith("(")) {
                 val result = customCalendarRegex.find(duedateDescription)
                 return if (result != null) {

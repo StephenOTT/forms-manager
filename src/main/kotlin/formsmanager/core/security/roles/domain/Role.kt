@@ -1,13 +1,16 @@
 package formsmanager.core.security.roles.domain
 
 import com.hazelcast.internal.util.UuidUtil
-import formsmanager.core.*
+import formsmanager.core.ConfigField
+import formsmanager.core.DataField
+import formsmanager.core.TenantField
+import formsmanager.core.TimestampFields
 import formsmanager.core.hazelcast.map.CrudableObject
 import formsmanager.core.hazelcast.map.CrudableObjectId
+import formsmanager.core.hazelcast.map.OptimisticLocking
 import formsmanager.core.security.roles.repository.RoleEntity
 import formsmanager.tenants.domain.TenantId
 import io.swagger.v3.oas.annotations.media.Schema
-import java.lang.IllegalArgumentException
 import java.time.Instant
 import java.util.*
 
@@ -56,7 +59,8 @@ data class Role(
         DataField,
         ConfigField,
         TenantField,
-        CrudableObject {
+        CrudableObject,
+        OptimisticLocking {
     override fun toEntityWrapper(): RoleEntity {
         return RoleEntity(id, this::class.qualifiedName!!, this)
     }

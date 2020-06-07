@@ -5,6 +5,7 @@ import formsmanager.core.TenantField
 import formsmanager.core.TimestampFields
 import formsmanager.core.hazelcast.map.CrudableObject
 import formsmanager.core.hazelcast.map.CrudableObjectId
+import formsmanager.core.hazelcast.map.OptimisticLocking
 import formsmanager.core.security.groups.domain.GroupId
 import formsmanager.tenants.domain.TenantId
 import formsmanager.users.repository.UserEntity
@@ -55,7 +56,8 @@ data class User(
 
 ) : TimestampFields,
         TenantField,
-        CrudableObject {
+        CrudableObject,
+        OptimisticLocking {
 
     companion object {
 

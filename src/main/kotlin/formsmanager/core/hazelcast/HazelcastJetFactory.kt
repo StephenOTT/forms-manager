@@ -8,6 +8,7 @@ import com.hazelcast.jet.config.JetConfig
 import com.hazelcast.map.MapStore
 import formsmanager.core.hazelcast.context.MicronautManagedContext
 import formsmanager.core.hazelcast.map.HazelcastCrudRepository
+import formsmanager.core.hazelcast.serialization.KryoStreamSerializer
 import formsmanager.core.hazelcast.serialization.SmileByteArraySerializer
 import formsmanager.core.ifDebugEnabled
 import io.micronaut.context.ApplicationContext
@@ -49,7 +50,8 @@ class HazelcastJetFactory {
 class JetConfiguration(
         private val hazelcastMicronautManagedContext: MicronautManagedContext,
         private val applicationContext: ApplicationContext,
-        private val smileSerializer: SmileByteArraySerializer
+        private val smileSerializer: SmileByteArraySerializer,
+        private val kryoSerializer: KryoStreamSerializer
 ) {
 
     companion object {
@@ -92,8 +94,9 @@ class JetConfiguration(
 
 
         val globalSerializer = GlobalSerializerConfig()
-//                .setOverrideJavaSerialization(true) // Make this a config
-                .setImplementation(smileSerializer)
+                .setOverrideJavaSerialization(true) // Make this a config
+//                .setImplementation(smileSerializer)
+                .setImplementation(kryoSerializer)
         serializationConfig.globalSerializerConfig = globalSerializer
 
         hConfig.serializationConfig = serializationConfig

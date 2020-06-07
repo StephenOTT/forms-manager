@@ -17,7 +17,8 @@ class StdWorkWeekCalendar : CustomBusinessCalendar {
 
     override val rules: List<Predicate<ZonedDateTime>> = listOf(
             isWeekday()
-                    .and(betweenHours("09:00", "12:00"))
+                    .and(betweenHours("09:00", "17:00"))
+                    .and(betweenHours("12:00", "12:59").negate())
                     .and(isDate("06-01").negate())
     )
     override val incrementer: ((date: Instant) -> Instant)? = null

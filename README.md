@@ -53,6 +53,9 @@ Notes:
 1. add expression handler to build custom dynmaic permissions for shiro wildcard https://stackoverflow.com/questions/2286648/named-placeholders-in-string-formatting
 
 1. InjectAware needs to be added to all Tasks.  The inherit does not work apply to the inject.. it would only inject on the extended properties
+1. Fields that are `@Inject` should try and always make them public because that way it does not require reflection.
+
+1. ExecutorService in MN has overlap interfaces with Hazelcast: as a result when you create a bean for IExecutorService it will trigger Bean Event triggers for ExecutorService and cause the app to fail.
 
 1. There are 4 Serializers:
    1. jackson used internally by Camunda
@@ -237,3 +240,90 @@ Handler
 "form_schemas:read:${fe.owner}:${fe.tenant}"
 "form_schemas:read:${fe.owner}:${fe.tenant}"
 "form_schemas:validate:${fe.owner}:${fe.tenant}"
+
+
+
+# Camunda Message Buffer
+
+Prevent race conditions and support operation conditions.
+Retry correlations that failed to correlate.
+
+Sometimes you have correlation occurring to multiple instances.
+But not all instances were ready at the same time, and durring the correlation, some were missed.
+Retry support is provided to continue to correlate until all expected correlations occurred. 
+
+
+**Actions:**
+
+1. Retry if no matches
+1. Exponential Retry
+1. Expected Matches: Keep Retry until number of expected matches.  Throw error if too many matches?
+1. Retry after expiry
+1. Correlate with Response + timeout: if timeout is reached, the result is not waited for, but client will still get a 200. 
+1. Correlate without Response
+1. Callback URL on completion?
+1. Correlate with Start Event
+1. Correlate with Activity Execution
+1. Correlate with StartEvent and/or Activity Execution
+1. Max Events in Buffer
+1. Max Correlated Messages In Buffer
+1. Max Correlating Messages in Buffer
+1. Pause Un-Correlated
+1. Metadata about Message Submitter
+1. Delegate code support to submit into buffer from scripts and delegates.
+1. Complex permissions support: Send Messages per topic, process Def, with and without variables, etc.
+
+
+
+# Permissions For
+
+tasks:complete
+tasks:view
+tasks:assign
+tasks:claim
+tasks:unclaim
+
+tasks:read_variable:*
+
+Form Submissions are multiple variables.  They are json
+If data should not be shared, then it should be split into a different variable for visibility by another user.
+(can do this because the practice is that variables are more stable)
+Example:
+UT1 -> Submit form.  in UT2 user should only be able to see specific fields of a Form.  So in UT2, a new form should be created that loads that specific data.
+If further constraints are needed, then Process Instance separation, or Variable permissions should be used.
+
+Further permissions logic and special considerations should VERY likely be used within a Cases model.
+WHere a Process Instance is where is being done, but the outcome is stored in a case.
+
+
+Task Complete:
+1. Is Assignee
+1. Is member of Candidate Users
+1. Is Member of Candidate Group
+1. Has instance permission
+
+View Completed Task Info:
+1. Is Assignee
+1. Is Member of Candidate Group
+1. Has Instance Permission
+1. Participated in process instance (optional toggle) (query of activity history for that process instance)
+
+Process Instance:
+1. Has Instance Permission
+1. Participated in Task in instance (query of activity history for that process instance)
+1. Has Instance Permission to Definition
+1. Member of Process Instance Owner BU
+1. Member of Process Definition Owner BU
+
+
+Process Definition:
+1. Process Definition Owner BU
+1. Definition instance Permission
+1. 
+
+
+Dynamics:
+
+1. Tenant
+1. BU membership
+1. Process Instance

@@ -9,6 +9,7 @@ import java.beans.FeatureDescriptor
 
 /**
  * Used by [MicronautExpressionManager] to inject EL resolver with Micronaut beans.
+ * Based on the SpringBoot ApplicationContextElResolver but with micronaut equivalent usage.
  */
 class ApplicationContextElResolver(
         private val applicationContext: ApplicationContext) : ELResolver() {

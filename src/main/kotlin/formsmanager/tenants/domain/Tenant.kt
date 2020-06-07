@@ -4,7 +4,9 @@ import com.hazelcast.internal.util.UuidUtil
 import formsmanager.core.TimestampFields
 import formsmanager.core.hazelcast.map.CrudableObject
 import formsmanager.core.hazelcast.map.CrudableObjectId
+import formsmanager.core.hazelcast.map.OptimisticLocking
 import formsmanager.tenants.repository.TenantEntity
+import io.micronaut.core.annotation.Introspected
 import io.swagger.v3.oas.annotations.media.Schema
 import java.time.Instant
 import java.util.*
@@ -29,6 +31,7 @@ data class TenantId(override val value: UUID): CrudableObjectId<TenantId> {
 }
 
 @Schema
+@Introspected
 data class Tenant(
 
         override val id: TenantId,
@@ -46,7 +49,8 @@ data class Tenant(
         override val updatedAt: Instant = createdAt
 
 ): TimestampFields,
-        CrudableObject {
+        CrudableObject,
+        OptimisticLocking {
 
     override fun toEntityWrapper(): TenantEntity {
         return TenantEntity(id, this::class.qualifiedName!!, this)

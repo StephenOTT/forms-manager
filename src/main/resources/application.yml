@@ -99,3 +99,8 @@ camunda:
         enabled: true
         composite:
           enabled: true
+---
+kryo:
+  enabled: true
+  classRegistrationRequired: false
+  warnUnregisteredClasses: true

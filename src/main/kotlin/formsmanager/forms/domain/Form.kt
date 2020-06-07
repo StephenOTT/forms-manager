@@ -4,6 +4,7 @@ import com.hazelcast.internal.util.UuidUtil
 import formsmanager.core.*
 import formsmanager.core.hazelcast.map.CrudableObject
 import formsmanager.core.hazelcast.map.CrudableObjectId
+import formsmanager.core.hazelcast.map.OptimisticLocking
 import formsmanager.forms.respository.FormEntity
 import formsmanager.tenants.domain.TenantId
 import io.swagger.v3.oas.annotations.media.Schema
@@ -63,7 +64,8 @@ data class Form(
         OwnerField,
         EnabledField,
         TenantField,
-        CrudableObject {
+        CrudableObject,
+        OptimisticLocking {
     override fun toEntityWrapper(): FormEntity {
         return FormEntity(id, this::class.qualifiedName!!, this)
     }

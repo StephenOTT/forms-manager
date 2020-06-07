@@ -1,5 +1,7 @@
 package formsmanager.camunda.engine.businesscalendar
 
+import org.camunda.bpm.engine.ProcessEngineException
+import org.camunda.bpm.engine.impl.ProcessEngineLogger
 import org.camunda.bpm.engine.impl.calendar.CycleBusinessCalendar
 import java.time.ZoneId
 import java.time.ZonedDateTime
@@ -16,11 +18,17 @@ class CustomCycleBusinessCalendar(
 
     override val calendarName: String = NAME
 
+    private val LOG = ProcessEngineLogger.UTIL_LOGGER
+
     override fun resolveDuedate(duedateDescription: String, startDate: Date?, repeatOffset: Long): Date {
         val customCalendarDescription: CustomBusinessCalendar.Companion.CustomCalendarDescription? = CustomBusinessCalendar.getCustomCalendar(duedateDescription)
 
         return if (customCalendarDescription != null){
-            val customCalendar = calendars.single { it.name == customCalendarDescription.calendarName }
+            val customCalendar = kotlin.runCatching {
+                calendars.single { it.name == customCalendarDescription.calendarName }
+            }.getOrElse {
+                throw ProcessEngineException("Unable to find the custom calendar for the provided name: ${customCalendarDescription.calendarName}", it)
+            }
 
             val initial = super.resolveDuedate(customCalendarDescription.duedateDescription, startDate, repeatOffset)
 

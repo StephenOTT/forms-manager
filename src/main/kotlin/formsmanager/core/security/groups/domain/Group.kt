@@ -7,6 +7,7 @@ import formsmanager.core.TenantField
 import formsmanager.core.TimestampFields
 import formsmanager.core.hazelcast.map.CrudableObject
 import formsmanager.core.hazelcast.map.CrudableObjectId
+import formsmanager.core.hazelcast.map.OptimisticLocking
 import formsmanager.core.hazelcast.map.persistence.MapStoreEntity
 import formsmanager.core.security.SecurityAware
 import formsmanager.core.security.groups.repository.GroupEntity
@@ -67,7 +68,8 @@ data class Group(
         TenantField,
         SecurityAware,
         Comparable<Group>,
-        CrudableObject {
+        CrudableObject,
+        OptimisticLocking {
 
     override fun toEntityWrapper(): MapStoreEntity<Group> {
         return GroupEntity(id, this::class.qualifiedName!!, this)

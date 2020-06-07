@@ -80,6 +80,9 @@ dependencies {
 
     implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-smile:2.10.3")
 
+    implementation("com.esotericsoftware:kryo:5.0.0-RC6")
+
+
     kapt("io.micronaut.configuration:micronaut-openapi:1.4.3")
     implementation("io.swagger.core.v3:swagger-annotations")
 

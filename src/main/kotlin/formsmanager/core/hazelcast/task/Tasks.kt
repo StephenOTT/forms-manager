@@ -6,7 +6,6 @@ import com.hazelcast.core.HazelcastInstanceAware
 import formsmanager.core.hazelcast.context.InjectAware
 import org.slf4j.LoggerFactory
 import java.util.concurrent.Callable
-import javax.inject.Inject
 
 /**
  * Tasks for execution that have a return (could also be a Unit return).
@@ -19,8 +18,8 @@ abstract class Task<R> : Callable<R>, HazelcastInstanceAware{
         internal val LOG = LoggerFactory.getLogger(Task::class.java)
     }
 
-    @Transient @Inject
-    protected lateinit var hazelcast: HazelcastInstance
+    @Transient @JsonIgnore
+    lateinit var hazelcast: HazelcastInstance
 
     @JsonIgnore
     override fun setHazelcastInstance(hazelcastInstance: HazelcastInstance) {
@@ -40,8 +39,8 @@ abstract class TaskWithoutReturn : Runnable, HazelcastInstanceAware{
         internal val LOG = LoggerFactory.getLogger(TaskWithoutReturn::class.java)
     }
 
-    @Transient @Inject @JsonIgnore
-    protected lateinit var hazelcast: HazelcastInstance
+    @Transient @JsonIgnore
+    lateinit var hazelcast: HazelcastInstance
 
     @JsonIgnore
     override fun setHazelcastInstance(hazelcastInstance: HazelcastInstance) {

@@ -7,6 +7,7 @@ import formsmanager.core.EnabledField
 import formsmanager.core.TimestampFields
 import formsmanager.core.hazelcast.map.CrudableObject
 import formsmanager.core.hazelcast.map.CrudableObjectId
+import formsmanager.core.hazelcast.map.OptimisticLocking
 import formsmanager.forms.respository.FormSchemaEntity
 import io.micronaut.core.annotation.Introspected
 import io.swagger.v3.oas.annotations.media.Schema
@@ -56,7 +57,8 @@ data class FormSchema(
         DataField,
         ConfigField,
         EnabledField,
-        CrudableObject {
+        CrudableObject,
+        OptimisticLocking {
 
     override fun toEntityWrapper(): FormSchemaEntity {
         return FormSchemaEntity(id, this::class.qualifiedName!!, this)

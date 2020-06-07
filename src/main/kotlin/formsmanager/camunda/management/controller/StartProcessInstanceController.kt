@@ -1,6 +1,8 @@
 package formsmanager.camunda.management.controller
 
 import com.hazelcast.core.HazelcastInstance
+import formsmanager.camunda.engine.message.CamundaMessageBuffer
+import formsmanager.camunda.engine.message.MessageRequest
 import formsmanager.camunda.engine.variable.HazelcastVariable
 import io.micronaut.http.HttpResponse
 import io.micronaut.http.annotation.Body
@@ -15,7 +17,8 @@ import org.camunda.bpm.engine.ProcessEngine
 @RequiresGuest
 class StartProcessInstanceController(
         private val engine: ProcessEngine,
-        private val hazelcastInstance: HazelcastInstance
+        private val hazelcastInstance: HazelcastInstance,
+        private val messageBuffer: CamundaMessageBuffer
 ) {
 
     @Post("/start")
@@ -33,8 +36,16 @@ class StartProcessInstanceController(
         }
     }
 
+    @Post("/message/correlate")
+    fun correlateMessage(@Body body: MessageRequest): Single<HttpResponse<MessageCorrelationResponse>> {
+        return messageBuffer.insert(body)
+                .map {
+                    HttpResponse.ok(MessageCorrelationResponse(it.id.toMapKey()))
+                }
+    }
+
     @Get("/test")
-    fun test(): HttpResponse<String>{
+    fun test(): HttpResponse<String> {
         println("casts")
         engine.identityService.setAuthentication("123", null, listOf("someTenant"))
         engine.runtimeService.createProcessInstanceQuery().list()

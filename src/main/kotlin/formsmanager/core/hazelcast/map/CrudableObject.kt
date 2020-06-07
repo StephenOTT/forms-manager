@@ -23,13 +23,15 @@ interface CrudableObject {
     val id: CrudableObjectId<out CrudableObjectId<*>>
 
     /**
-     * Optimistic locking value
-     */
-    val ol: Long
-
-    /**
      * Converts object to a Wrapped object used in Database storage (jpa)
      */
     @JsonIgnore
     fun toEntityWrapper(): MapStoreEntity<out CrudableObject>
+}
+
+interface OptimisticLocking{
+    /**
+     * Optimistic locking value
+     */
+    val ol: Long
 }
