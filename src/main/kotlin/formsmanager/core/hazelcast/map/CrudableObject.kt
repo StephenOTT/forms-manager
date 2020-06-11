@@ -28,10 +28,3 @@ interface CrudableObject {
     @JsonIgnore
     fun toEntityWrapper(): MapStoreEntity<out CrudableObject>
 }
-
-interface OptimisticLocking{
-    /**
-     * Optimistic locking value
-     */
-    val ol: Long
-}

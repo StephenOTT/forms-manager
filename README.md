@@ -64,6 +64,8 @@ Notes:
    1. Jackson used for Map Store Persistence (JDBC persistence with Hazelcast Mapstore (How the data is stored as JSON in the DB)): formsmanager.core.map.persistence.serialization.JacksonDBSerializationFactory.class
 
 
+1. **Add ability for dynamic permissions applied to objects such as: a Single BU memberhsip but difference between staff and citizne: how do you filter out services that are only for the staff?  Would need to be able to apply a logic to staff that only staff can see a specific service (maybe a custom predicate rule applied?)**
+
 questions
 1. Member selection for distributed tasks: To only have specific nodes work on specific tasks.
  
