@@ -2,65 +2,56 @@ package formsmanager.forms.respository
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.hazelcast.core.HazelcastInstance
+import com.hazelcast.map.IMap
 import com.hazelcast.query.Predicates
-import formsmanager.core.hazelcast.annotation.MapStore
-import formsmanager.core.hazelcast.map.HazelcastCrudRepository
-import formsmanager.core.hazelcast.map.persistence.CrudableMapStoreRepository
-import formsmanager.core.hazelcast.map.persistence.CurdableMapStore
-import formsmanager.core.hazelcast.map.persistence.MapStoreEntity
+import formsmanager.camunda.engine.history.mapstore.GenericMapStoreEntity
+import formsmanager.core.hazelcast.map.persistence.HazelcastReactiveRepository
+import formsmanager.core.hazelcast.map.persistence.MapStoreCrudRepository
 import formsmanager.core.hazelcast.query.PagingUtils.Companion.createPagingPredicate
 import formsmanager.core.hazelcast.query.PagingUtils.Companion.createPagingPredicateComparators
 import formsmanager.core.hazelcast.query.beanDescription
 import formsmanager.forms.domain.FormId
 import formsmanager.forms.domain.FormSchema
 import formsmanager.forms.domain.FormSchemaId
+import io.micronaut.core.convert.ConversionContext
+import io.micronaut.core.convert.TypeConverter
 import io.micronaut.data.jdbc.annotation.JdbcRepository
 import io.micronaut.data.model.Pageable
 import io.micronaut.data.model.query.builder.sql.Dialect
 import io.reactivex.Flowable
+import java.util.*
+import javax.inject.Named
 import javax.inject.Singleton
 import javax.persistence.Entity
 
 
-/**
- * Entity for storage in a IMDG MapStore for FormSchemaEntity
- */
 @Entity
 class FormSchemaEntity(key: FormSchemaId,
                        classId: String,
-                       value: FormSchema) : MapStoreEntity<FormSchema>(key.toMapKey(), classId, value)
+                       value: FormSchema) : GenericMapStoreEntity<FormSchema>(key.toMapKey(), classId, value)
 
-/**
- * JDBC Repository for use by the FormSchemas MapStore
- */
+
 @JdbcRepository(dialect = Dialect.H2)
-interface FormSchemasMapStoreRepository : CrudableMapStoreRepository<FormSchemaEntity>
+interface FormSchemasMapStoreRepository : MapStoreCrudRepository<String, FormSchemaEntity>
 
-/**
- * Provides a MapStore implementation for FormSchemaEntity
- */
 @Singleton
-class FormSchemasMapStore(mapStoreRepository: FormSchemasMapStoreRepository) :
-        CurdableMapStore<FormSchema, FormSchemaEntity, FormSchemasMapStoreRepository>(mapStoreRepository)
+class FormSchemaToEntityTypeConverter : TypeConverter<FormSchema, FormSchemaEntity> {
+    override fun convert(`object`: FormSchema, targetType: Class<FormSchemaEntity>, context: ConversionContext): Optional<FormSchemaEntity> {
+        return Optional.of(FormSchemaEntity(`object`.id, `object`::class.qualifiedName!!, `object`))
+    }
+}
 
-/**
- * Implementation providing a Form Schema IMDG IMap CRUD operations repository.
- */
 @Singleton
-@MapStore(FormSchemasMapStore::class, FormSchemaHazelcastRepository.MAP_NAME)
 class FormSchemaHazelcastRepository(
-        hazelcastInstance: HazelcastInstance,
-        private val mapper: ObjectMapper
-) :
-        HazelcastCrudRepository<FormSchema>(
-                hazelcastInstance = hazelcastInstance,
-                mapName = MAP_NAME
-        ) {
+        @param:Named("json") private val mapper: ObjectMapper,
+        hazelcastInstance: HazelcastInstance
+) : HazelcastReactiveRepository<String, FormSchema> {
 
     companion object {
-        const val MAP_NAME = "form-schemas"
+        val MAP_NAME = "form-schemas"
     }
 
+    override val iMap: IMap<String, FormSchema> by lazy { hazelcastInstance.getMap<String, FormSchema>(MAP_NAME) }
 
     /**
      * @param formId The UUID key of the Form
@@ -81,7 +72,7 @@ class FormSchemaHazelcastRepository(
             )
 
         }.flatMapIterable {
-            mapService.values(it)
+            iMap.values(it)
         }
     }
 }

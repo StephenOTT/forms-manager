@@ -3,12 +3,9 @@ package formsmanager.users.domain
 import com.hazelcast.internal.util.UuidUtil
 import formsmanager.core.TenantField
 import formsmanager.core.TimestampFields
-import formsmanager.core.hazelcast.map.CrudableObject
 import formsmanager.core.hazelcast.map.CrudableObjectId
-import formsmanager.core.hazelcast.map.OptimisticLocking
 import formsmanager.core.security.groups.domain.GroupId
 import formsmanager.tenants.domain.TenantId
-import formsmanager.users.repository.UserEntity
 import io.swagger.v3.oas.annotations.media.Schema
 import java.time.Instant
 import java.util.*
@@ -34,9 +31,9 @@ data class UserId(override val value: UUID): CrudableObjectId<UserId> {
 @Schema
 data class User(
 
-        override val id: UserId,
+        val id: UserId,
 
-        override val ol: Long = 0,
+        val ol: Long = 0,
 
         val username: String,
 
@@ -55,9 +52,10 @@ data class User(
         override val updatedAt: Instant = createdAt
 
 ) : TimestampFields,
-        TenantField,
-        CrudableObject,
-        OptimisticLocking {
+        TenantField
+//        CrudableObject,
+//        OptimisticLocking
+{
 
     companion object {
 
@@ -95,9 +93,9 @@ data class User(
 
     }
 
-    override fun toEntityWrapper(): UserEntity {
-        return UserEntity(id, this::class.qualifiedName!!, this)
-    }
+//    override fun toEntityWrapper(): UserEntity {
+//        return UserEntity(id, this::class.qualifiedName!!, this)
+//    }
 
     @Schema
     data class EmailInfo(

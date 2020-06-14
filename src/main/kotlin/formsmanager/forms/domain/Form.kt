@@ -2,10 +2,7 @@ package formsmanager.forms.domain
 
 import com.hazelcast.internal.util.UuidUtil
 import formsmanager.core.*
-import formsmanager.core.hazelcast.map.CrudableObject
 import formsmanager.core.hazelcast.map.CrudableObjectId
-import formsmanager.core.hazelcast.map.OptimisticLocking
-import formsmanager.forms.respository.FormEntity
 import formsmanager.tenants.domain.TenantId
 import io.swagger.v3.oas.annotations.media.Schema
 import java.time.Instant
@@ -33,9 +30,9 @@ data class FormId(override val value: UUID): CrudableObjectId<FormId> {
 @Schema
 data class Form(
 
-        override val id: FormId,
+        val id: FormId,
 
-        override val ol: Long = 0,
+        val ol: Long = 0,
 
         val name: String,
 
@@ -63,12 +60,13 @@ data class Form(
         ConfigField,
         OwnerField,
         EnabledField,
-        TenantField,
-        CrudableObject,
-        OptimisticLocking {
-    override fun toEntityWrapper(): FormEntity {
-        return FormEntity(id, this::class.qualifiedName!!, this)
-    }
+        TenantField
+//        CrudableObject,
+//        OptimisticLocking
+{
+//    override fun toEntityWrapper(): FormEntity {
+//        return FormEntity(id, this::class.qualifiedName!!, this)
+//    }
 
 }
 

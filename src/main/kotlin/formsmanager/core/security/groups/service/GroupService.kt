@@ -57,14 +57,14 @@ class GroupService(
      * @param subject optional Shiro Subject.  If Subject is provided, then security validation will occur.
      */
     fun create(item: Group, subject: Subject? = null): Single<Group> {
-        return subject.checkAuthorization("groups:create:${item.tenant}").flatMap {
-            groupHazelcastRepository.create(item)
+        return subject.checkAuthorization("groups:create:${item.tenant.asString()}").flatMap {
+            groupHazelcastRepository.create(item.id.toMapKey(), item)
         }
     }
 
     fun get(id: GroupId, subject: Subject? = null): Single<Group> {
-        return groupHazelcastRepository.get(id).map { g ->
-            subject.checkAuthorization("groups:read:${g.tenant}").map {
+        return groupHazelcastRepository.get(id.toMapKey()).map { g ->
+            subject.checkAuthorization("groups:read:${g.tenant.asString()}").map {
                 g
             }
             g
@@ -82,9 +82,9 @@ class GroupService(
      * If subject is provided, then subject must have permissions to read all provided group mapkeys.
      */
     fun get(idSet: Set<GroupId>, subject: Subject? = null): Single<List<Group>> {
-        return groupHazelcastRepository.get(idSet).map { groups ->
+        return groupHazelcastRepository.get(idSet.map { it.toMapKey() }.toSet()).map { groups ->
             groups.forEach { group ->
-                subject.checkAuthorization("groups:read:${group.tenant}")
+                subject.checkAuthorization("groups:read:${group.tenant.asString()}")
                         .subscribeOn(Schedulers.io()).blockingGet()
             }
             groups
@@ -92,7 +92,7 @@ class GroupService(
     }
 
     fun exists(id: GroupId): Single<Boolean> {
-        return groupHazelcastRepository.exists(id)
+        return groupHazelcastRepository.exists(id.toMapKey())
     }
 
     /**
@@ -100,9 +100,9 @@ class GroupService(
      * @param item Group to be updated/overwritten
      */
     fun update(item: Group, subject: Subject? = null): Single<Group> {
-        return groupHazelcastRepository.update(item) { originalItem, newItem ->
+        return groupHazelcastRepository.update(item.id.toMapKey(), item) { originalItem, newItem ->
             //Update logic for automated fields @TODO consider automation with annotations
-            subject.checkAuthorization("groups:update:${originalItem.tenant}")
+            subject.checkAuthorization("groups:update:${originalItem.tenant.asString()}")
                     .subscribeOn(Schedulers.io()).blockingGet()
 
             newItem.copy(
@@ -155,7 +155,7 @@ class GroupService(
             )
 
         }.flatMapIterable {
-            groupHazelcastRepository.mapService.values(it)
+            groupHazelcastRepository.iMap.values(it)
         }
     }
 }

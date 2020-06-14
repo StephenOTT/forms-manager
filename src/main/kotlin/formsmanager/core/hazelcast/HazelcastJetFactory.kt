@@ -1,17 +1,16 @@
 package formsmanager.core.hazelcast
 
-import com.hazelcast.config.*
+import com.hazelcast.config.ClasspathYamlConfig
+import com.hazelcast.config.Config
+import com.hazelcast.config.GlobalSerializerConfig
+import com.hazelcast.config.SerializationConfig
 import com.hazelcast.core.HazelcastInstance
 import com.hazelcast.jet.Jet
 import com.hazelcast.jet.JetInstance
 import com.hazelcast.jet.config.JetConfig
-import com.hazelcast.map.MapStore
-import formsmanager.camunda.engine.history.mapstore.HazelcastReactiveRepository
 import formsmanager.core.hazelcast.context.MicronautManagedContext
-import formsmanager.core.hazelcast.map.HazelcastCrudRepository
+import formsmanager.core.hazelcast.map.persistence.DatabaseMapStoreFactory
 import formsmanager.core.hazelcast.serialization.KryoStreamSerializer
-import formsmanager.core.ifDebugEnabled
-import io.micronaut.context.ApplicationContext
 import io.micronaut.context.annotation.Context
 import io.micronaut.context.annotation.Factory
 import io.micronaut.context.annotation.Primary
@@ -47,8 +46,8 @@ class HazelcastJetFactory {
 @Singleton
 class JetConfiguration(
         private val hazelcastMicronautManagedContext: MicronautManagedContext,
-        private val applicationContext: ApplicationContext,
-        private val kryoSerializer: KryoStreamSerializer
+        private val kryoSerializer: KryoStreamSerializer,
+        private val databaseMapStoreFactory: DatabaseMapStoreFactory
 ) {
 
     companion object {
@@ -72,66 +71,20 @@ class JetConfiguration(
 
         val globalSerializer = GlobalSerializerConfig()
                 .setOverrideJavaSerialization(true) // Make this a config
-//                .setImplementation(smileSerializer)
                 .setImplementation(kryoSerializer)
         serializationConfig.globalSerializerConfig = globalSerializer
 
         hConfig.serializationConfig = serializationConfig
 
-        createMapStoreImplementations(hConfig)
+        hConfig.mapConfigs.filter {
+            it.value.mapStoreConfig.factoryClassName == "DatabaseMapStoreFactory"
+        }.forEach {
+            it.value.mapStoreConfig.factoryImplementation = databaseMapStoreFactory
+        }
 
         hConfig.managedContext = hazelcastMicronautManagedContext
 //        hConfig.classLoader = applicationContext.classLoader //@TODO review impacts
         return hConfig
     }
-
-    private fun createMapStoreConfig(implementation: MapStore<*, *>,
-                                     initialLoadMode: MapStoreConfig.InitialLoadMode = MapStoreConfig.InitialLoadMode.EAGER): MapStoreConfig {
-        val config = MapStoreConfig()
-        config.initialLoadMode = initialLoadMode
-        config.implementation = implementation
-        return config
-    }
-
-
-    /**
-     * Sets MapStore implementations based on the MapStore annotation used on HazelcastCrudRepository classes.
-     */
-    private fun createMapStoreImplementations(hConfig: Config) {
-        applicationContext.getBeanDefinitions(HazelcastCrudRepository::class.java).forEach { repo ->
-            repo.getDeclaredAnnotation(formsmanager.core.hazelcast.annotation.MapStore::class.java)?.let { ann ->
-                val mapName = ann.getRequiredValue(formsmanager.core.hazelcast.annotation.MapStore::mapName.name, String::class.java)
-
-                val mapConfig = hConfig.getMapConfig(mapName)
-
-                // Find the bean associated with the MapStore annotation, and create a MapStoreConfig
-                ann.classValue().orElseThrow { IllegalStateException("Expected a class value") }.let {
-                    val mapStore = applicationContext.getBean(it)
-
-                    mapConfig.mapStoreConfig = createMapStoreConfig(mapStore as MapStore<*, *>)
-
-                    log.ifDebugEnabled { "Setup MapStore implementation for map $mapName with ${mapStore::class.qualifiedName}" }
-                }
-            }
-        }
-
-        applicationContext.getBeanDefinitions(HazelcastReactiveRepository::class.java).forEach { repo ->
-            repo.getDeclaredAnnotation(formsmanager.core.hazelcast.annotation.MapStore::class.java)?.let { ann ->
-                val mapName = ann.getRequiredValue(formsmanager.core.hazelcast.annotation.MapStore::mapName.name, String::class.java)
-
-                val mapConfig = hConfig.getMapConfig(mapName)
-
-                // Find the bean associated with the MapStore annotation, and create a MapStoreConfig
-                ann.classValue().orElseThrow { IllegalStateException("Expected a class value") }.let {
-                    val mapStore = applicationContext.getBean(it)
-
-                    mapConfig.mapStoreConfig = createMapStoreConfig(mapStore as MapStore<*, *>)
-
-                    log.ifDebugEnabled { "Setup MapStore implementation for map $mapName with ${mapStore::class.qualifiedName}" }
-                }
-            }
-        }
-    }
-
 
 }

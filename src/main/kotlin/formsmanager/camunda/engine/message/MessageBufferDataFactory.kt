@@ -24,6 +24,7 @@ class MessageBufferDataFactory {
 
     }
 
+
     @Singleton
     @Named(CamundaMessageBuffer.BUFFER_NAME)
     fun messageBufferMap(hazelcastInstance: HazelcastInstance): IMap<String, MessageWrapper> {

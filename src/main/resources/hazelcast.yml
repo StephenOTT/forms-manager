@@ -30,6 +30,13 @@ hazelcast:
           attributes:
             - "tenant"
             - "name"
+      map-store:
+        enabled: true
+        initial-mode: EAGER
+        factory-class-name: DatabaseMapStoreFactory
+        properties:
+          repoClass: formsmanager.core.security.roles.repository.RolesMapStoreRepository
+          entityClass: formsmanager.core.security.roles.repository.RoleEntity
     groups:
       near-cache:
         time-to-live-seconds: 600
@@ -41,6 +48,13 @@ hazelcast:
           attributes:
             - "tenant"
             - "name"
+      map-store:
+        enabled: true
+        initial-mode: EAGER
+        factory-class-name: DatabaseMapStoreFactory
+        properties:
+          repoClass: formsmanager.core.security.groups.repository.GroupsMapStoreRepository
+          entityClass: formsmanager.core.security.groups.repository.GroupEntity
     users:
       near-cache:
         time-to-live-seconds: 600
@@ -52,6 +66,13 @@ hazelcast:
           attributes:
             - "tenant"
             - "username"
+      map-store:
+        enabled: true
+        initial-mode: EAGER
+        factory-class-name: DatabaseMapStoreFactory
+        properties:
+          repoClass: formsmanager.users.repository.UsersMapStoreRepository
+          entityClass: formsmanager.users.repository.UserEntity
     tenants:
       near-cache:
         time-to-live-seconds: 600
@@ -62,3 +83,34 @@ hazelcast:
         - type: HASH
           attributes:
             - "name"
+      map-store:
+        enabled: true
+        initial-mode: EAGER
+        factory-class-name: DatabaseMapStoreFactory
+        properties:
+          repoClass: formsmanager.tenants.repository.TenantsMapStoreRepository
+          entityClass: formsmanager.tenants.repository.TenantEntity
+    forms:
+      indexes:
+        - type: HASH
+          attributes:
+            - "name"
+      map-store:
+        enabled: true
+        initial-mode: EAGER
+        factory-class-name: DatabaseMapStoreFactory
+        properties:
+          repoClass: formsmanager.forms.repository.FormEntity
+          entityClass: formsmanager.forms.repository.FormsMapStoreRepository
+    form-schemas:
+      indexes:
+        - type: HASH
+          attributes:
+            - "formId"
+      map-store:
+        enabled: true
+        initial-mode: EAGER
+        factory-class-name: DatabaseMapStoreFactory
+        properties:
+          repoClass: formsmanager.forms.repository.FormSchemaEntity
+          entityClass: formsmanager.forms.repository.FormSchemasMapStoreRepository

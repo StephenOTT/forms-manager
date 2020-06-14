@@ -7,7 +7,7 @@ import javax.inject.Singleton
 
 @Singleton
 class CamundaMessageBuffer(
-        @Named(BUFFER_NAME) private val messages: IMap<String, MessageWrapper>
+        @param:Named(BUFFER_NAME) private val messages: IMap<String, MessageWrapper>
 ) {
 
     companion object {

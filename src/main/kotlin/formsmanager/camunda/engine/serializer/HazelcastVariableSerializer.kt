@@ -18,7 +18,7 @@ import javax.inject.Singleton
 
 @Singleton
 class HazelcastVariableSerializer(
-        @Named("camunda-process-instance-process-variables")
+        @param:Named("camunda-process-instance-process-variables")
         private val camundaVariablesMap: IMap<String, ProcessVariable>
 ) : AbstractTypedValueSerializer<ObjectValue>(ValueType.OBJECT) {
 

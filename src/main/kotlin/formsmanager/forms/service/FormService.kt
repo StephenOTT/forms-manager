@@ -52,16 +52,16 @@ class FormService(
      */
     fun createForm(form: Form, subject: Subject? = null): Single<Form> {
         return tenantService.exists(form.tenant, true).flatMap {
-            subject.checkAuthorization("forms:create:${form.owner}:${form.tenant}")
+            subject.checkAuthorization("forms:create:${form.owner}:${form.tenant.asString()}")
         }.flatMap {
-            formHazelcastRepository.create(form)
+            formHazelcastRepository.create(form.id.toMapKey(), form)
         }
     }
 
 
-    fun getForm(formMapKey: FormId, subject: Subject? = null): Single<Form> {
-        return formHazelcastRepository.get(formMapKey).flatMap { fe ->
-            subject.checkAuthorization("forms:read:${fe.owner}:${fe.tenant}").map {
+    fun getForm(formId: FormId, subject: Subject? = null): Single<Form> {
+        return formHazelcastRepository.get(formId.toMapKey()).flatMap { fe ->
+            subject.checkAuthorization("forms:read:${fe.owner}:${fe.tenant.asString()}").map {
                 fe
             }
         }
@@ -78,7 +78,7 @@ class FormService(
 
     fun getFormIdByName(name: String, tenantId: TenantId): Single<FormId>{
        return Single.fromCallable {
-           formHazelcastRepository.mapService.project(
+           formHazelcastRepository.iMap.project(
                    Projections.singleAttribute<MutableMap.MutableEntry<String, Form>, FormId>("id"),
                    Predicates.and(
                            Predicates.equal<String, Form>("tenant", tenantId),
@@ -92,8 +92,8 @@ class FormService(
 
 
 
-    fun exists(formMapKey: FormId, mustExist: Boolean = false): Single<Boolean> {
-        return formHazelcastRepository.exists(formMapKey).map {
+    fun exists(formId: FormId, mustExist: Boolean = false): Single<Boolean> {
+        return formHazelcastRepository.exists(formId.toMapKey()).map {
             if (mustExist) {
                 require(it, lazyMessage = { "Form does not exist." })
             }
@@ -117,8 +117,8 @@ class FormService(
         }
     }
 
-    fun formSchemaExists(formSchemaMapKey: FormSchemaId, mustExist: Boolean = false): Single<Boolean> {
-        return formSchemaHazelcastRepository.exists(formSchemaMapKey).map {
+    fun formSchemaExists(formSchemaId: FormSchemaId, mustExist: Boolean = false): Single<Boolean> {
+        return formSchemaHazelcastRepository.exists(formSchemaId.toMapKey()).map {
             if (mustExist) {
                 require(it, lazyMessage = { "Form Schema does not exist." })
             }
@@ -131,8 +131,8 @@ class FormService(
      * @param form Form to be updated/overwritten
      */
     fun updateForm(form: Form, subject: Subject? = null): Single<Form> {
-        return formHazelcastRepository.update(form) { originalItem, newItem ->
-            subject.checkAuthorization("forms:update:${originalItem.owner}:${originalItem.tenant}")
+        return formHazelcastRepository.update(form.id.toMapKey(), form) { originalItem, newItem ->
+            subject.checkAuthorization("forms:update:${originalItem.owner}:${originalItem.tenant.asString()}")
                     .subscribeOn(Schedulers.io()).blockingGet()
 
             //Update logic for automated fields @TODO consider automation with annotations
@@ -154,16 +154,16 @@ class FormService(
             if (isDefault) {
                 // Check if they are allowed to update the Form with the Default key.
                 // They have the permission to update the Schema, but not the permission to make it the default form.
-                subject.checkAuthorization("forms:update:${fe.owner}:${fe.tenant}")
+                subject.checkAuthorization("forms:update:${fe.owner}:${fe.tenant.asString()}")
                         .subscribeOn(Schedulers.io()).blockingGet()
             }
            fe
         }.flatMap{ fe ->
-            subject.checkAuthorization("form_schemas:update:${fe.owner}:${fe.tenant}").map {
+            subject.checkAuthorization("form_schemas:update:${fe.owner}:${fe.tenant.asString()}").map {
                 fe
             }
         }.flatMap {  fe ->
-            formSchemaHazelcastRepository.update(schema) { originalItem, newItem ->
+            formSchemaHazelcastRepository.update(schema.id.toMapKey(), schema) { originalItem, newItem ->
                 // Update logic for automated fields @TODO consider automation with annotations
                 newItem.copy(
                         ol = originalItem.ol + 1,
@@ -178,7 +178,7 @@ class FormService(
         }.flatMap { (fe, fse) ->
             //@TODO consider adding a lock on the form entity incase of race condition between update of schema and update of form with default value.
             //If the form schema was created then update the Form with the default schema ID
-            formHazelcastRepository.update(fe) { old, new ->
+            formHazelcastRepository.update(fe.id.toMapKey(), fe) { old, new ->
                 old.copy(
                         ol = old.ol + 1,
                         defaultSchema = new.defaultSchema,
@@ -206,25 +206,25 @@ class FormService(
             if (isDefault) {
                 // Check if they are allowed to update the Form with the Default key.
                 // They have the permission to update the Schema, but not the permission to make it the default form.
-                subject.checkAuthorization("forms:update:${fe.owner}:${fe.tenant}")
+                subject.checkAuthorization("forms:update:${fe.owner}:${fe.tenant.asString()}")
                         .subscribeOn(Schedulers.io()).blockingGet()
             }
             fe
         }.flatMap { fe ->
-            subject.checkAuthorization("form_schemas:create:${fe.owner}:${fe.tenant}").map {
+            subject.checkAuthorization("form_schemas:create:${fe.owner}:${fe.tenant.asString()}").map {
                 fe
             }
         }.flatMap { fe ->
 
             // Create the form schema
-            formSchemaHazelcastRepository.create(schema).map { createdSchema ->
+            formSchemaHazelcastRepository.create(schema.id.toMapKey(), schema).map { createdSchema ->
                 Pair(fe, createdSchema)
             }
 
         }.flatMap { (fe, fse) ->
             //@TODO consider adding a lock on the form entity incase of race condition between update of schema and update of form with default value.
             //If the form schema was created then update the Form with the default schema ID
-            formHazelcastRepository.update(fe) { old, new ->
+            formHazelcastRepository.update(fe.id.toMapKey(), fe) { old, new ->
                 old.copy(
                         ol = old.ol + 1,
                         defaultSchema = new.defaultSchema,
@@ -255,8 +255,8 @@ class FormService(
         }
     }
 
-    fun getSchema(schemaMapKey: FormSchemaId, subject: Subject? = null): Single<FormSchema> {
-        return formSchemaHazelcastRepository.get(schemaMapKey)
+    fun getSchema(formSchemaId: FormSchemaId, subject: Subject? = null): Single<FormSchema> {
+        return formSchemaHazelcastRepository.get(formSchemaId.toMapKey())
                 .onErrorResumeNext {
                     Single.error(IllegalArgumentException("Cannot find schema id"))
                 }.flatMap { fse ->
@@ -265,7 +265,7 @@ class FormService(
                         Pair(fe, fse)
                     }
                 }.flatMap { (fe, fse) ->
-                    subject.checkAuthorization("form_schemas:read:${fe.owner}:${fe.tenant}").map {
+                    subject.checkAuthorization("form_schemas:read:${fe.owner}:${fe.tenant.asString()}").map {
                         fse
                     }
                 }
@@ -277,7 +277,7 @@ class FormService(
      */
     fun getAllSchemas(formMapKey: FormId, subject: Subject? = null, pageable: Pageable = Pageable.from(0)): Flowable<FormSchema> {
         return getForm(formMapKey).map { fe ->
-            subject.checkAuthorization("form_schemas:read:${fe.owner}:${fe.tenant}")
+            subject.checkAuthorization("form_schemas:read:${fe.owner}:${fe.tenant.asString()}")
         }.flatMapPublisher {
             formSchemaHazelcastRepository.getSchemasForForm(formMapKey, pageable)
         }
@@ -325,7 +325,7 @@ class FormService(
                 Pair(fe, fse)
             }
         }.flatMap { (fe, fse) ->
-            subject.checkAuthorization("form_schemas:validate:${fe.owner}:${fe.tenant}").flatMap {
+            subject.checkAuthorization("form_schemas:validate:${fe.owner}:${fe.tenant.asString()}").flatMap {
                 submissionHandler.process(formSubmission, fe, fse, dryRun, subject)
             }
         }

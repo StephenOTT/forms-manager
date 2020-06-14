@@ -11,5 +11,4 @@ interface CrudableObjectId<T>: Comparable<T>, Serializable{
     fun asString(): String
 
     fun type(): String
-
 }

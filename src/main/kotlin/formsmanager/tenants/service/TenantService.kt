@@ -43,7 +43,7 @@ class TenantService(
     fun create(tenant: Tenant, subject: Subject? = null): Single<Tenant> {
         return subject.checkAuthorization("tenants:create")
                 .flatMap {
-                    tenantHazelcastRepository.create(tenant)
+                    tenantHazelcastRepository.create(tenant.id.toMapKey(), tenant)
                 }
     }
 
@@ -52,17 +52,17 @@ class TenantService(
      * @param tenantId Tenant ID
      */
     fun get(id: TenantId, subject: Subject? = null): Single<Tenant> {
-        return tenantHazelcastRepository.get(id).flatMap { te ->
-            subject.checkAuthorization("tenants:read:${te.id}").map {
+        return tenantHazelcastRepository.get(id.toMapKey()).flatMap { te ->
+            subject.checkAuthorization("tenants:read:${te.id.asString()}").map {
                 te
             }
         }
     }
 
     fun get(ids: Set<TenantId>, subject: Subject? = null): Single<List<Tenant>> {
-        return tenantHazelcastRepository.get(ids).map { items ->
+        return tenantHazelcastRepository.get(ids.map { it.toMapKey() }.toSet()).map { items ->
             items.forEach { item ->
-                subject.checkAuthorization("tenants:read:${item.id}")
+                subject.checkAuthorization("tenants:read:${item.id.asString()}")
                         .subscribeOn(Schedulers.io()).blockingGet()
             }
             items
@@ -74,7 +74,7 @@ class TenantService(
         return tenantHazelcastRepository.get(Predicate {
             it.value.name == tenantName
         }).flatMap { tenant ->
-            subject.checkAuthorization("tenants:read:${tenant.id}").map {
+            subject.checkAuthorization("tenants:read:${tenant.id.asString()}").map {
                 tenant
             }
         }
@@ -87,7 +87,7 @@ class TenantService(
      */
     fun getTenantIdByTenantName(tenantName: String): Single<TenantId>{
         return Single.fromCallable {
-            tenantHazelcastRepository.mapService.project(
+            tenantHazelcastRepository.iMap.project(
                     Projections.singleAttribute<MutableMap.MutableEntry<String, Tenant>, TenantId>("id"),
                     Predicates.equal("name", tenantName)
             ).single()
@@ -101,7 +101,7 @@ class TenantService(
     }
 
     fun exists(tenantMapKey: TenantId, mustExist: Boolean = false): Single<Boolean> {
-        return tenantHazelcastRepository.exists(tenantMapKey).map {
+        return tenantHazelcastRepository.exists(tenantMapKey.toMapKey()).map {
             if (mustExist) {
                 require(it, lazyMessage = { "Tenant does not exist" })
             }
@@ -115,11 +115,11 @@ class TenantService(
      * @param tenant Tenant to be updated/overwritten
      */
     fun update(tenant: Tenant, subject: Subject? = null): Single<Tenant> {
-        return tenantHazelcastRepository.update(tenant) { originalItem, newItem ->
+        return tenantHazelcastRepository.update(tenant.id.toMapKey(), tenant) { originalItem, newItem ->
             //Update logic for automated fields @TODO consider automation with annotations
 
             // @TODO review if this should be a perm based on the tenantID.
-            subject.checkAuthorization("tenants:update:${originalItem.id}")
+            subject.checkAuthorization("tenants:update:${originalItem.id.asString()}")
                     .subscribeOn(Schedulers.io()).blockingGet()
 
             newItem.copy(

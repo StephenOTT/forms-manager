@@ -40,7 +40,7 @@ class UserService(
         }
         return tenantService.exists(item.tenant, true)
                 .flatMap {
-                    userRepository.exists(item.id)
+                    userRepository.exists(item.id.toMapKey())
 
                 }.map {
                     if (it) {
@@ -52,15 +52,15 @@ class UserService(
                 }.doOnSuccess {
                     log.ifDebugEnabled { "User Entity being Created: ${it}." }
                 }.flatMap {
-                    userRepository.create(it)
+                    userRepository.create(it.id.toMapKey(), it)
                 }
     }
 
-    fun get(userMapKey: UserId, subject: Subject? = null): Single<User> {
-        return userRepository.get(userMapKey).flatMap { ue ->
+    fun get(userId: UserId, subject: Subject? = null): Single<User> {
+        return userRepository.get(userId.toMapKey()).flatMap { ue ->
             // Dynamic Permission, where the user MUST have access to their specific user ID.
             // Means that ever user will require a permission to access their account.
-            subject.checkAuthorization("users:read:${ue.tenant}:${ue.id}").map {
+            subject.checkAuthorization("users:read:${ue.tenant.asString()}:${ue.id.asString()}").map {
                 ue
             }
         }
@@ -70,7 +70,7 @@ class UserService(
         return userRepository.get(Predicate {
             it.value.tenant == tenantId && it.value.username == username
         }).flatMap { user ->
-            subject.checkAuthorization("users:read:${user.tenant}:${user.id}").map {
+            subject.checkAuthorization("users:read:${user.tenant.asString()}:${user.id.asString()}").map {
                 user
             }
         }
@@ -81,13 +81,13 @@ class UserService(
     }
 
 
-    fun exists(userMapKey: UserId): Single<Boolean> {
-        return userRepository.exists(userMapKey)
+    fun exists(userId: UserId): Single<Boolean> {
+        return userRepository.exists(userId.toMapKey())
     }
 
     fun getUserIdByEmail(email: String, tenantId: TenantId): Single<UserId> {
         return Single.fromCallable {
-            userRepository.mapService.project(
+            userRepository.iMap.project(
                     Projections.singleAttribute<MutableMap.MutableEntry<String, User>, UserId>("id"),
                     Predicates.and(
                             Predicates.equal<String, User>("tenant", tenantId),
@@ -106,8 +106,8 @@ class UserService(
      * If the user is being changed from one tenant to another, then the userEntity should contain the new tenant, and the method argument must have the current user's tenant
      */
     fun update(user: User, subject: Subject? = null): Single<User> {
-        return userRepository.update(user) { originalItem, newItem ->
-            subject.checkAuthorization("users:update:${user.tenant}:${user.id}")
+        return userRepository.update(user.id.toMapKey(), user) { originalItem, newItem ->
+            subject.checkAuthorization("users:update:${user.tenant.asString()}:${user.id.asString()}")
                     .subscribeOn(Schedulers.io()).blockingGet()
 
             //Update logic for automated fields @TODO consider automation with annotations

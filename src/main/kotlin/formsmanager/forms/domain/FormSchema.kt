@@ -5,10 +5,7 @@ import formsmanager.core.ConfigField
 import formsmanager.core.DataField
 import formsmanager.core.EnabledField
 import formsmanager.core.TimestampFields
-import formsmanager.core.hazelcast.map.CrudableObject
 import formsmanager.core.hazelcast.map.CrudableObjectId
-import formsmanager.core.hazelcast.map.OptimisticLocking
-import formsmanager.forms.respository.FormSchemaEntity
 import io.micronaut.core.annotation.Introspected
 import io.swagger.v3.oas.annotations.media.Schema
 import java.time.Instant
@@ -35,9 +32,9 @@ data class FormSchemaId(override val value: UUID): CrudableObjectId<FormSchemaId
 @Schema
 @Introspected
 data class FormSchema(
-        override val id: FormSchemaId,
+        val id: FormSchemaId,
 
-        override val ol: Long = 0,
+        val ol: Long = 0,
 
         val formId: FormId,
 
@@ -56,13 +53,14 @@ data class FormSchema(
 ) : TimestampFields,
         DataField,
         ConfigField,
-        EnabledField,
-        CrudableObject,
-        OptimisticLocking {
+        EnabledField
+//        CrudableObject,
+//        OptimisticLocking
+{
 
-    override fun toEntityWrapper(): FormSchemaEntity {
-        return FormSchemaEntity(id, this::class.qualifiedName!!, this)
-    }
+//    override fun toEntityWrapper(): FormSchemaEntity {
+//        return FormSchemaEntity(id, this::class.qualifiedName!!, this)
+//    }
 }
 
 @Schema

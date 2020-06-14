@@ -1,52 +1,44 @@
 package formsmanager.forms.respository
 
 import com.hazelcast.core.HazelcastInstance
+import com.hazelcast.map.IMap
+import formsmanager.camunda.engine.history.mapstore.GenericMapStoreEntity
+import formsmanager.core.hazelcast.map.persistence.HazelcastReactiveRepository
+import formsmanager.core.hazelcast.map.persistence.MapStoreCrudRepository
 import formsmanager.forms.domain.Form
-import formsmanager.core.hazelcast.annotation.MapStore
-import formsmanager.core.hazelcast.map.persistence.CrudableMapStoreRepository
-import formsmanager.core.hazelcast.map.persistence.CurdableMapStore
-import formsmanager.core.hazelcast.map.HazelcastCrudRepository
-import formsmanager.core.hazelcast.map.persistence.MapStoreEntity
 import formsmanager.forms.domain.FormId
+import io.micronaut.core.convert.ConversionContext
+import io.micronaut.core.convert.TypeConverter
 import io.micronaut.data.jdbc.annotation.JdbcRepository
 import io.micronaut.data.model.query.builder.sql.Dialect
+import java.util.*
 import javax.inject.Singleton
 import javax.persistence.Entity
 
-/**
- * Entity for storage in a IMDG MapStore for FormEntity
- */
+
 @Entity
 class FormEntity(key: FormId,
                  classId: String,
-                 value: Form) : MapStoreEntity<Form>(key.toMapKey(), classId, value)
+                 value: Form) : GenericMapStoreEntity<Form>(key.toMapKey(), classId, value)
 
-/**
- * JDBC Repository for use by the Forms MapStore
- */
 @JdbcRepository(dialect = Dialect.H2)
-interface FormsMapStoreRepository : CrudableMapStoreRepository<FormEntity>
+interface FormsMapStoreRepository : MapStoreCrudRepository<String, FormEntity>
 
-/**
- * Provides a MapStore implementation for FormEntity
- */
 @Singleton
-class FormsMapStore(mapStoreRepository: FormsMapStoreRepository) :
-        CurdableMapStore<Form, FormEntity, FormsMapStoreRepository>(mapStoreRepository)
-
-/**
- * Implementation providing a Form IMDG IMap CRUD operations repository.
- */
-@Singleton
-@MapStore(FormsMapStore::class, FormHazelcastRepository.MAP_NAME)
-class FormHazelcastRepository(
-        hazelcastInstance: HazelcastInstance) :
-        HazelcastCrudRepository<Form>(
-                hazelcastInstance = hazelcastInstance,
-                mapName = MAP_NAME
-        ) {
-
-        companion object{
-                const val MAP_NAME = "forms"
+class FormToEntityTypeConverter : TypeConverter<Form, FormEntity> {
+        override fun convert(`object`: Form, targetType: Class<FormEntity>, context: ConversionContext): Optional<FormEntity> {
+                return Optional.of(FormEntity(`object`.id, `object`::class.qualifiedName!!, `object`))
         }
+}
+
+@Singleton
+class FormHazelcastRepository(
+        hazelcastInstance: HazelcastInstance
+) : HazelcastReactiveRepository<String, Form>{
+
+        companion object {
+                val MAP_NAME = "forms"
+        }
+
+        override val iMap: IMap<String, Form> by lazy { hazelcastInstance.getMap<String, Form>(MAP_NAME) }
 }

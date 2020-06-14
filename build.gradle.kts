@@ -78,8 +78,6 @@ dependencies {
     runtimeOnly("io.micronaut.configuration:micronaut-jdbc-hikari")
     compileOnly("jakarta.persistence:jakarta.persistence-api:2.2.2")
 
-    implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-smile:2.10.3")
-
     implementation("com.esotericsoftware:kryo:5.0.0-RC6")
 
 

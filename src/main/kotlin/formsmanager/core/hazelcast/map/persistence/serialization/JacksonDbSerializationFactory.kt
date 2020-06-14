@@ -6,7 +6,7 @@ import com.fasterxml.jackson.core.JsonGenerator
 import com.fasterxml.jackson.core.JsonParser
 import com.fasterxml.jackson.databind.*
 import com.fasterxml.jackson.databind.ObjectMapper.DefaultTyping
-import formsmanager.camunda.hazelcast.HistoricVariableInstanceEntitySmileMixIn
+import formsmanager.camunda.hazelcast.HistoricVariableInstanceEntityMixIn
 import io.micronaut.context.annotation.Factory
 import io.micronaut.jackson.JacksonConfiguration
 import org.camunda.bpm.engine.impl.persistence.entity.HistoricVariableInstanceEntity
@@ -30,7 +30,7 @@ class JacksonDbSerializationFactory{
 
     private fun setupMapper(mappedInSetup: ObjectMapper, jacksonConfiguration: JacksonConfiguration?): ObjectMapper{
         // SPECIAL MIXIN FOR Camunda History
-        mappedInSetup.addMixIn(HistoricVariableInstanceEntity::class.java, HistoricVariableInstanceEntitySmileMixIn::class.java)
+        mappedInSetup.addMixIn(HistoricVariableInstanceEntity::class.java, HistoricVariableInstanceEntityMixIn::class.java)
 
         mappedInSetup.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
         mappedInSetup.configure(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY, true)

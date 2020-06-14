@@ -43,8 +43,8 @@ class RoleService(
      * @param subject optional Shiro Subject.  If Subject is provided, then security validation will occur.
      */
     fun create(entity: Role, subject: Subject? = null): Single<Role> {
-        return subject.checkAuthorization("roles:create:${entity.tenant}").flatMap {
-            roleHazelcastRepository.create(entity)
+        return subject.checkAuthorization("roles:create:${entity.tenant.asString()}").flatMap {
+            roleHazelcastRepository.create(entity.id.toMapKey(), entity)
         }
     }
 
@@ -52,19 +52,19 @@ class RoleService(
      * Get/find a Role
      * @param id Role ID
      */
-    fun get(roleMapKey: RoleId, subject: Subject? = null): Single<Role> {
-        return roleHazelcastRepository.get(roleMapKey).flatMap { g ->
-            subject.checkAuthorization("roles:read:${g.tenant}").map {
+    fun get(roleId: RoleId, subject: Subject? = null): Single<Role> {
+        return roleHazelcastRepository.get(roleId.toMapKey()).flatMap { g ->
+            subject.checkAuthorization("roles:read:${g.tenant.asString()}").map {
                 g
             }
         }
     }
 
     fun get(idSet: Set<RoleId>, subject: Subject? = null): Single<List<Role>> {
-        return roleHazelcastRepository.get(idSet).map { groups ->
+        return roleHazelcastRepository.get(idSet.map { it.toMapKey() }.toSet()).map { groups ->
             subject?.let {
                 groups.forEach { group ->
-                    subject.checkAuthorization("roles:read:${group.tenant}")
+                    subject.checkAuthorization("roles:read:${group.tenant.asString()}")
                             .subscribeOn(Schedulers.io()).blockingGet()
                 }
             }
@@ -78,8 +78,8 @@ class RoleService(
         })
     }
 
-    fun roleExists(roleMapKey: RoleId): Single<Boolean> {
-        return roleHazelcastRepository.exists(roleMapKey)
+    fun roleExists(roleId: RoleId): Single<Boolean> {
+        return roleHazelcastRepository.exists(roleId.toMapKey())
     }
 
     /**
@@ -87,8 +87,8 @@ class RoleService(
      * @param entity Role to be updated/overwritten
      */
     fun update(entity: Role, subject: Subject? = null): Single<Role> {
-        return roleHazelcastRepository.update(entity) { originalItem, newItem ->
-            subject.checkAuthorization("roles:update:${originalItem.tenant}")
+        return roleHazelcastRepository.update(entity.id.toMapKey(), entity) { originalItem, newItem ->
+            subject.checkAuthorization("roles:update:${originalItem.tenant.asString()}")
                     .subscribeOn(Schedulers.io()).blockingGet()
 
             //Update logic for automated fields @TODO consider automation with annotations

@@ -1,9 +1,6 @@
 package formsmanager.camunda.management.controller
 
 import com.hazelcast.core.HazelcastInstance
-import com.hazelcast.internal.util.UuidUtil
-import formsmanager.camunda.engine.history.mapstore.CustomObjectHazelcastRepository
-import formsmanager.camunda.engine.history.mapstore.MyCustomObject
 import formsmanager.camunda.engine.message.CamundaMessageBuffer
 import formsmanager.camunda.engine.message.MessageRequest
 import formsmanager.camunda.engine.variable.HazelcastVariable
@@ -23,8 +20,7 @@ class StartProcessInstanceController(
         private val engine: ProcessEngine,
         private val hazelcastInstance: HazelcastInstance,
         private val messageBuffer: CamundaMessageBuffer,
-        private val appCtx: ApplicationContext,
-        private val customObjectHazelcastRepository: CustomObjectHazelcastRepository
+        private val appCtx: ApplicationContext
 ) {
 
     @Post("/start")
@@ -53,10 +49,8 @@ class StartProcessInstanceController(
     @Get("/test")
     fun test(): HttpResponse<String> {
         println("casts")
-        val custom = MyCustomObject(UuidUtil.newSecureUuidString(), "name1", "last1")
-        val result = customObjectHazelcastRepository.create(custom.id, custom).blockingGet()
 //        engine.identityService.setAuthentication("123", null, listOf("someTenant"))
 //        engine.runtimeService.createProcessInstanceQuery().list()
-        return HttpResponse.ok(result.toString())
+        return HttpResponse.ok("done")
     }
 }

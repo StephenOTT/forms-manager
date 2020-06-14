@@ -5,12 +5,8 @@ import formsmanager.core.ConfigField
 import formsmanager.core.DataField
 import formsmanager.core.TenantField
 import formsmanager.core.TimestampFields
-import formsmanager.core.hazelcast.map.CrudableObject
 import formsmanager.core.hazelcast.map.CrudableObjectId
-import formsmanager.core.hazelcast.map.OptimisticLocking
-import formsmanager.core.hazelcast.map.persistence.MapStoreEntity
 import formsmanager.core.security.SecurityAware
-import formsmanager.core.security.groups.repository.GroupEntity
 import formsmanager.core.security.roles.domain.RoleId
 import formsmanager.core.typeconverter.RenderJoin
 import formsmanager.tenants.domain.TenantId
@@ -39,9 +35,9 @@ data class GroupId(override val value: UUID): CrudableObjectId<GroupId> {
 @Schema
 data class Group(
 
-        override val id: GroupId,
+        val id: GroupId,
 
-        override val ol: Long = 0,
+        val ol: Long = 0,
 
         val name: String,
 
@@ -67,13 +63,14 @@ data class Group(
         ConfigField,
         TenantField,
         SecurityAware,
-        Comparable<Group>,
-        CrudableObject,
-        OptimisticLocking {
+        Comparable<Group>
+//        CrudableObject,
+//        OptimisticLocking
+{
 
-    override fun toEntityWrapper(): MapStoreEntity<Group> {
-        return GroupEntity(id, this::class.qualifiedName!!, this)
-    }
+//    override fun toEntityWrapper(): MapStoreEntity<Group> {
+//        return GroupEntity(id, this::class.qualifiedName!!, this)
+//    }
 
     /**
      * Compares based on the createdAt property

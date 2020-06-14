@@ -5,10 +5,7 @@ import formsmanager.core.ConfigField
 import formsmanager.core.DataField
 import formsmanager.core.TenantField
 import formsmanager.core.TimestampFields
-import formsmanager.core.hazelcast.map.CrudableObject
 import formsmanager.core.hazelcast.map.CrudableObjectId
-import formsmanager.core.hazelcast.map.OptimisticLocking
-import formsmanager.core.security.roles.repository.RoleEntity
 import formsmanager.tenants.domain.TenantId
 import io.swagger.v3.oas.annotations.media.Schema
 import java.time.Instant
@@ -35,9 +32,9 @@ data class RoleId(override val value: UUID): CrudableObjectId<RoleId> {
 @Schema
 data class Role(
 
-        override val id: RoleId,
+        val id: RoleId,
 
-        override val ol: Long = 0,
+        val ol: Long = 0,
 
         val name: String,
 
@@ -58,12 +55,13 @@ data class Role(
         ): TimestampFields,
         DataField,
         ConfigField,
-        TenantField,
-        CrudableObject,
-        OptimisticLocking {
-    override fun toEntityWrapper(): RoleEntity {
-        return RoleEntity(id, this::class.qualifiedName!!, this)
-    }
+        TenantField
+//        CrudableObject,
+//        OptimisticLocking
+{
+//    override fun toEntityWrapper(): RoleEntity {
+//        return RoleEntity(id, this::class.qualifiedName!!, this)
+//    }
 
     companion object {
         val roleNameRegex = Regex("^[A-Z0-9]+(?:_[A-Z0-9]+)*\$")

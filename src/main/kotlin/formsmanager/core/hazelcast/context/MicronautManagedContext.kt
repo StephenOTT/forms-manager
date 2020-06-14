@@ -20,12 +20,14 @@ class MicronautManagedContext(
     @ExperimentalStdlibApi
     override fun initialize(instance: Any?): Any? {
         if (instance != null) {
+            //@TODO ** Move this to using BeanIntrospector!!!!
             if (instance is RunnableAdapter<*>) {
                 injectIfInjectAware(instance.runnable)
             } else {
                 injectIfInjectAware(instance)
             }
         }
+
         return instance
     }
 
