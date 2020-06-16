@@ -1,6 +1,6 @@
 package formsmanager.camunda.events
 
-interface ExternalTaskEvent : CamundaEvent{
+interface ExternalTaskEvent : CamundaReactiveEvent{
     val taskId: String
 }
 

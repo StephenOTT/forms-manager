@@ -86,6 +86,11 @@ todo:
 1. ** Convert to modern binary serialization to replace Serialization for Shiro Cache (Using Hz) **  
 1. Create a new PrincipalCollection class.  Dont use SimplePrincipalCollection as it does not have good enough typing...
 1. Create a Mixin Bean support to auto add mixins based on configs
+1. Add Indexes and composite indexes in hz config for Camunda History entities
+1. Remove use of Injecting IMap as a Bean due to potential deadlocks with Eager MapStore loading 
+
+
+
 
 Python execution service:
 
@@ -105,7 +110,7 @@ Formio Links:
 
 
 
-# Building a Hazelcast based CRUD Repository
+# OLD---> REBUILD ---> Building a Hazelcast based CRUD Repository
 
 A Hazelcast based CRUD Repository is four components:
 

@@ -99,6 +99,9 @@ camunda:
         enabled: true
         composite:
           enabled: true
+  bpm:
+    job-executor:
+      deployment-aware: true
 ---
 kryo:
   enabled: true

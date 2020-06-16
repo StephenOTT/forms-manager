@@ -1,14 +1,19 @@
 package formsmanager.camunda.engine
 
 import io.micronaut.context.annotation.Context
+import io.micronaut.context.annotation.Requirements
 import io.micronaut.context.annotation.Requires
+import io.micronaut.core.util.StringUtils
 import org.camunda.bpm.engine.ProcessEngine
 import java.io.File
 import javax.annotation.PostConstruct
 import javax.inject.Singleton
 
 @Singleton
-@Requires(beans = [ProcessEngine::class])
+@Requirements(
+        Requires(beans = [ProcessEngine::class]),
+        Requires(property = "camunda.bpm.autoDeploymentEnabled", value = StringUtils.TRUE, defaultValue = CamundaConfiguration.Bpm.autoDeploymentEnabled_default)
+)
 @Context
 class AutoDeployment() {
 

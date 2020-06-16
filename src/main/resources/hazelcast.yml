@@ -114,3 +114,129 @@ hazelcast:
         properties:
           repoClass: formsmanager.forms.repository.FormSchemaEntity
           entityClass: formsmanager.forms.repository.FormSchemasMapStoreRepository
+    camunda-message-buffer:
+      indexes:
+        - type: HASH
+          attributes:
+            - "id"
+            - "message.name"
+            - "state"
+      map-store:
+        enabled: true
+        initial-mode: EAGER
+        factory-class-name: DatabaseMapStoreFactory
+        properties:
+          repoClass: formsmanager.camunda.messagebuffer.repository.MessageBufferMapStoreRepository
+          entityClass: formsmanager.camunda.messagebuffer.repository.MessageWrapperEntity
+    camunda-history-HistoricActivityInstance:
+      map-store:
+        enabled: true
+        initial-mode: EAGER
+        factory-class-name: DatabaseMapStoreFactory
+        properties:
+          repoClass: formsmanager.camunda.hazelcast.history.repository.HistoricActivityInstanceEventMapStoreRepository
+          entityClass: formsmanager.camunda.hazelcast.history.repository.HistoricActivityInstanceEntity
+    camunda-history-HistoricCaseActivityInstance:
+      map-store:
+        enabled: true
+        initial-mode: EAGER
+        factory-class-name: DatabaseMapStoreFactory
+        properties:
+          repoClass: formsmanager.camunda.hazelcast.history.repository.HistoricCaseActivityInstanceEventMapStoreRepository
+          entityClass: formsmanager.camunda.hazelcast.history.repository.HistoricCaseActivityInstanceEntity
+    camunda-history-HistoricCaseInstance:
+      map-store:
+        enabled: true
+        initial-mode: EAGER
+        factory-class-name: DatabaseMapStoreFactory
+        properties:
+          repoClass: formsmanager.camunda.hazelcast.history.repository.HistoricCaseInstanceEventMapStoreRepository
+          entityClass: formsmanager.camunda.hazelcast.history.repository.HistoricCaseInstanceEntity
+    camunda-history-HistoricDecisionInstance:
+      map-store:
+        enabled: true
+        initial-mode: EAGER
+        factory-class-name: DatabaseMapStoreFactory
+        properties:
+          repoClass: formsmanager.camunda.hazelcast.history.repository.HistoricDecisionInstanceMapStoreRepository
+          entityClass: formsmanager.camunda.hazelcast.history.repository.HistoricDecisionInstanceEntity
+    camunda-history-HistoricDetail:
+      map-store:
+        enabled: true
+        initial-mode: EAGER
+        factory-class-name: DatabaseMapStoreFactory
+        properties:
+          repoClass: formsmanager.camunda.hazelcast.history.repository.HistoricDetailEventMapStoreRepository
+          entityClass: formsmanager.camunda.hazelcast.history.repository.HistoricDetailEntity
+    camunda-history-HistoricExternalTaskLog:
+      map-store:
+        enabled: true
+        initial-mode: EAGER
+        factory-class-name: DatabaseMapStoreFactory
+        properties:
+          repoClass: formsmanager.camunda.hazelcast.history.repository.HistoricExternalTaskLogMapStoreRepository
+          entityClass: formsmanager.camunda.hazelcast.history.repository.HistoricExternalTaskLogEntity
+    camunda-history-HistoricFormProperty:
+      map-store:
+        enabled: true
+        initial-mode: EAGER
+        factory-class-name: DatabaseMapStoreFactory
+        properties:
+          repoClass: formsmanager.camunda.hazelcast.history.repository.HistoricFormPropertyEntityMapStoreRepository
+          entityClass: formsmanager.camunda.hazelcast.history.repository.HistoricFormPropertyEntity
+    camunda-history-HistoricIncident:
+      map-store:
+        enabled: true
+        initial-mode: EAGER
+        factory-class-name: DatabaseMapStoreFactory
+        properties:
+          repoClass: formsmanager.camunda.hazelcast.history.repository.HistoricIncidentMapStoreRepository
+          entityClass: formsmanager.camunda.hazelcast.history.repository.HistoricIncidentEntity
+    camunda-history-HistoricIdentityLinkLog:
+      map-store:
+        enabled: true
+        initial-mode: EAGER
+        factory-class-name: DatabaseMapStoreFactory
+        properties:
+          repoClass: formsmanager.camunda.hazelcast.history.repository.HistoricIdentityLinkLogMapStoreRepository
+          entityClass: formsmanager.camunda.hazelcast.history.repository.HistoricIdentityLinkLogEntity
+    camunda-history-HistoricJobLog:
+      map-store:
+        enabled: true
+        initial-mode: EAGER
+        factory-class-name: DatabaseMapStoreFactory
+        properties:
+          repoClass: formsmanager.camunda.hazelcast.history.repository.HistoricJobLogMapStoreRepository
+          entityClass: formsmanager.camunda.hazelcast.history.repository.HistoricJobLogEntity
+    camunda-history-HistoricProcessInstance:
+      map-store:
+        enabled: true
+        initial-mode: EAGER
+        factory-class-name: DatabaseMapStoreFactory
+        properties:
+          repoClass: formsmanager.camunda.hazelcast.history.repository.HistoricProcessInstanceEventMapStoreRepository
+          entityClass: formsmanager.camunda.hazelcast.history.repository.HistoricProcessInstanceEntity
+    camunda-history-HistoricTaskInstance:
+      map-store:
+        enabled: true
+        initial-mode: EAGER
+        factory-class-name: DatabaseMapStoreFactory
+        properties:
+          repoClass: formsmanager.camunda.hazelcast.history.repository.HistoricTaskInstanceEventMapStoreRepository
+          entityClass: formsmanager.camunda.hazelcast.history.repository.HistoricTaskInstanceEntity
+    camunda-history-HistoricUserOperationLog:
+      map-store:
+        enabled: true
+        initial-mode: EAGER
+        factory-class-name: DatabaseMapStoreFactory
+        properties:
+          repoClass: formsmanager.camunda.hazelcast.history.repository.HistoricUserOperationLogMapStoreRepository
+          entityClass: formsmanager.camunda.hazelcast.history.repository.HistoricUserOperationLogEntryEntity
+    camunda-history-HistoricVariableInstance:
+      map-store:
+        enabled: true
+        initial-mode: EAGER
+        factory-class-name: DatabaseMapStoreFactory
+        properties:
+          repoClass: formsmanager.camunda.hazelcast.history.repository.HistoricHistoricVariableMapStoreRepository
+          entityClass: formsmanager.camunda.hazelcast.history.repository.HistoricVariableInstanceEntity

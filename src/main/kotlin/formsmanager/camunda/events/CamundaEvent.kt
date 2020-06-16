@@ -1,3 +1,0 @@
-package formsmanager.camunda.events
-
-interface CamundaEvent

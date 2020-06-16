@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.hazelcast.core.HazelcastInstance
 import com.hazelcast.map.IMap
 import com.hazelcast.query.Predicates
-import formsmanager.camunda.engine.history.mapstore.GenericMapStoreEntity
+import formsmanager.core.hazelcast.map.persistence.GenericMapStoreEntity
 import formsmanager.core.hazelcast.map.persistence.HazelcastReactiveRepository
 import formsmanager.core.hazelcast.map.persistence.MapStoreCrudRepository
 import formsmanager.core.hazelcast.query.PagingUtils.Companion.createPagingPredicate

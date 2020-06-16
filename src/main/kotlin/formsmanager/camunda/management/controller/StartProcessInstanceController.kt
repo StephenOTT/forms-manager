@@ -1,9 +1,9 @@
 package formsmanager.camunda.management.controller
 
 import com.hazelcast.core.HazelcastInstance
-import formsmanager.camunda.engine.message.CamundaMessageBuffer
-import formsmanager.camunda.engine.message.MessageRequest
-import formsmanager.camunda.engine.variable.HazelcastVariable
+import formsmanager.camunda.hazelcast.variable.HazelcastVariable
+import formsmanager.camunda.messagebuffer.service.MessageBufferService
+import formsmanager.camunda.messagebuffer.MessageRequest
 import io.micronaut.context.ApplicationContext
 import io.micronaut.http.HttpResponse
 import io.micronaut.http.annotation.Body
@@ -18,9 +18,9 @@ import org.camunda.bpm.engine.ProcessEngine
 @RequiresGuest
 class StartProcessInstanceController(
         private val engine: ProcessEngine,
-        private val hazelcastInstance: HazelcastInstance,
-        private val messageBuffer: CamundaMessageBuffer,
-        private val appCtx: ApplicationContext
+        private val hazelcastInstance: HazelcastInstance, // here for testing @TODO remove later
+        private val messageBufferService: MessageBufferService,
+        private val appCtx: ApplicationContext // here for testing @TODO remove later
 ) {
 
     @Post("/start")
@@ -29,9 +29,11 @@ class StartProcessInstanceController(
             val variables = body.variables.mapValues {
                 HazelcastVariable(it.key, it.value)
             }
-            engine.identityService.setAuthentication("123", null, listOf("someTenant"))
+//            engine.identityService.setAuthentication("123", null, listOf("someTenant"))
+//            engine.runtimeService.createProcessInstanceByKey(body.key).businessKey(body.businessKey)
+//                    .processDefinitionTenantId("someTenant")
             val process = engine.runtimeService.startProcessInstanceByKey(body.key, body.businessKey, variables)
-            engine.identityService.clearAuthentication()
+//            engine.identityService.clearAuthentication()
             process
         }.map {
             HttpResponse.ok("processInstanceId: ${it.processInstanceId}")
@@ -40,9 +42,9 @@ class StartProcessInstanceController(
 
     @Post("/message/correlate")
     fun correlateMessage(@Body body: MessageRequest): Single<HttpResponse<MessageCorrelationResponse>> {
-        return messageBuffer.insert(body)
+        return messageBufferService.addToBuffer(body)
                 .map {
-                    HttpResponse.ok(MessageCorrelationResponse(it.id.toMapKey()))
+                    HttpResponse.ok(MessageCorrelationResponse(it.id.asString()))
                 }
     }
 

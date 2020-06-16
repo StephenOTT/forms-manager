@@ -53,6 +53,8 @@ interface CustomBusinessCalendar {
         )
 
         /**
+         * Check if the due date description has a custom calendar description.
+         *
          * @return CustomCalendarDescription or null if there is no custom calendar
          * @exception IllegalArgumentException if calendar was detected but unable to parse
          */

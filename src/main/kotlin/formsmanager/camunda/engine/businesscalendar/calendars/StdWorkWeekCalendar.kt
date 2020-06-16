@@ -15,6 +15,13 @@ import javax.inject.Singleton
 class StdWorkWeekCalendar : CustomBusinessCalendar {
     override val name: String = "StdWorkWeek"
 
+    val holidays = listOf(
+            isDate("06-14").negate(),
+            isDate("06-15").negate(),
+            isDate("06-16").negate(),
+            isDate("06-17").negate()
+    )
+
     override val rules: List<Predicate<ZonedDateTime>> = listOf(
             isWeekday()
                     .and(betweenHours("09:00", "17:00"))

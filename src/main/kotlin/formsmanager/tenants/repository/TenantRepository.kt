@@ -2,7 +2,7 @@ package formsmanager.tenants.repository
 
 import com.hazelcast.core.HazelcastInstance
 import com.hazelcast.map.IMap
-import formsmanager.camunda.engine.history.mapstore.GenericMapStoreEntity
+import formsmanager.core.hazelcast.map.persistence.GenericMapStoreEntity
 import formsmanager.core.hazelcast.map.persistence.HazelcastReactiveRepository
 import formsmanager.core.hazelcast.map.persistence.MapStoreCrudRepository
 import formsmanager.tenants.domain.Tenant

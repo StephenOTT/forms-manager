@@ -1,7 +1,7 @@
 package formsmanager.camunda.management.controller
 
-import formsmanager.camunda.engine.message.CamundaMessageBuffer
-import formsmanager.camunda.engine.message.MessageRequest
+import formsmanager.camunda.messagebuffer.service.MessageBufferService
+import formsmanager.camunda.messagebuffer.MessageRequest
 import io.micronaut.http.HttpResponse
 import io.micronaut.http.annotation.Body
 import io.micronaut.http.annotation.Controller
@@ -12,15 +12,15 @@ import org.apache.shiro.authz.annotation.RequiresGuest
 @Controller("/workflow/message")
 @RequiresGuest
 class CorrelateMessageController(
-        private val messageBuffer: CamundaMessageBuffer
+        private val messageBufferService: MessageBufferService
 ) {
 
     @Post("/correlate")
     fun correlateMessage(@Body body: MessageRequest): Single<HttpResponse<MessageCorrelationResponse>> {
         // @TODO add permission handling
-        return messageBuffer.insert(body)
+        return messageBufferService.addToBuffer(body)
                 .map {
-                    HttpResponse.ok(MessageCorrelationResponse(it.id.toMapKey()))
+                    HttpResponse.ok(MessageCorrelationResponse(it.id.asString()))
                 }
     }
 
