@@ -42,7 +42,7 @@ class HazelcastVariableEnricherTask(
                 tenantId = camVariable.tenantId,
                 activityInstanceId = if (camVariable.activityInstanceId == camVariable.processInstanceId) null else camVariable.activityInstanceId,
                 scope = if (camVariable.activityInstanceId == camVariable.processInstanceId) "process" else "local",
-                createdAt = camVariable.createTime.toInstant()
+                createdAt = camVariable.createTime.toInstant() //@TODO review how dates are stored
         )
 
         //@TODO consider a entryProcessor instead:

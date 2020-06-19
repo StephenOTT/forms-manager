@@ -102,6 +102,8 @@ camunda:
   bpm:
     job-executor:
       deployment-aware: true
+
+    history-level: "FULL"
 ---
 kryo:
   enabled: true

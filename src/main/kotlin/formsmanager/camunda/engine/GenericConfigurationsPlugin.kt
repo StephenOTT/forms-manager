@@ -3,10 +3,14 @@ package formsmanager.camunda.engine
 import formsmanager.camunda.engine.plugin.MicronautProcessEnginePlugin
 import org.camunda.bpm.engine.ProcessEngine
 import org.camunda.bpm.engine.impl.cfg.ProcessEngineConfigurationImpl
+import javax.inject.Named
+import javax.inject.Singleton
 
 /**
  * A place to configure all of the generic Camunda Configurations that do not warrant a full plugin.
  */
+@Singleton
+@Named("generic-configurations")
 class GenericConfigurationsPlugin(
         private val camundaConfiguration: CamundaConfiguration,
         private val bpmConfiguration: CamundaConfiguration.Bpm,
@@ -20,11 +24,17 @@ class GenericConfigurationsPlugin(
         bpmConfiguration.bpmnStacktraceVerbose?.let {
             processEngineConfiguration.isBpmnStacktraceVerbose = it
         }
+
+        bpmConfiguration.historyLevel.let {
+            processEngineConfiguration.setHistory(it)
+        }
+
     }
 
     override fun postProcessEngineBuild(processEngine: ProcessEngine) {
     }
 
     override fun postInit(processEngineConfiguration: ProcessEngineConfigurationImpl) {
+
     }
 }

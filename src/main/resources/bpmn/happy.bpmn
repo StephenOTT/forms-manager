@@ -9,19 +9,10 @@
     </bpmn:startEvent>
     <bpmn:sequenceFlow id="Flow_0okmb86" sourceRef="StartEvent_1" targetRef="Activity_1pdki17" />
     <bpmn:sequenceFlow id="Flow_00x3xjp" sourceRef="Activity_1pdki17" targetRef="Activity_05p1z73" />
-    <bpmn:serviceTask id="Activity_1pdki17" name="ET1" camunda:type="external" camunda:topic="topic1">
-      <bpmn:incoming>Flow_0okmb86</bpmn:incoming>
-      <bpmn:incoming>Flow_00m3t6g</bpmn:incoming>
-      <bpmn:outgoing>Flow_00x3xjp</bpmn:outgoing>
-    </bpmn:serviceTask>
     <bpmn:endEvent id="Event_1bg23ez">
       <bpmn:incoming>Flow_16csluk</bpmn:incoming>
     </bpmn:endEvent>
     <bpmn:sequenceFlow id="Flow_16csluk" sourceRef="Activity_05p1z73" targetRef="Event_1bg23ez" />
-    <bpmn:serviceTask id="Activity_05p1z73" name="ET2" camunda:type="external" camunda:topic="topic1">
-      <bpmn:incoming>Flow_00x3xjp</bpmn:incoming>
-      <bpmn:outgoing>Flow_16csluk</bpmn:outgoing>
-    </bpmn:serviceTask>
     <bpmn:boundaryEvent id="Event_1nhkr5j" cancelActivity="false" attachedToRef="Activity_1pdki17">
       <bpmn:outgoing>Flow_0246uam</bpmn:outgoing>
       <bpmn:timerEventDefinition id="TimerEventDefinition_1geocry">
@@ -37,8 +28,25 @@
       <bpmn:outgoing>Flow_00m3t6g</bpmn:outgoing>
       <bpmn:messageEventDefinition id="MessageEventDefinition_02ncldy" messageRef="Message_1s1rfqw" />
     </bpmn:startEvent>
+    <bpmn:receiveTask id="Activity_1pdki17" name="ET1" messageRef="Message_0u4htq0">
+      <bpmn:extensionElements>
+        <camunda:executionListener delegateExpression="${create1}" event="start" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_0okmb86</bpmn:incoming>
+      <bpmn:incoming>Flow_00m3t6g</bpmn:incoming>
+      <bpmn:outgoing>Flow_00x3xjp</bpmn:outgoing>
+    </bpmn:receiveTask>
+    <bpmn:receiveTask id="Activity_05p1z73" name="ET2" messageRef="Message_024ni0v">
+      <bpmn:extensionElements>
+        <camunda:executionListener delegateExpression="${update1}" event="start" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_00x3xjp</bpmn:incoming>
+      <bpmn:outgoing>Flow_16csluk</bpmn:outgoing>
+    </bpmn:receiveTask>
   </bpmn:process>
   <bpmn:message id="Message_1s1rfqw" name="someMessage" />
+  <bpmn:message id="Message_0u4htq0" name="m1" />
+  <bpmn:message id="Message_024ni0v" name="m2" />
   <bpmndi:BPMNDiagram id="BPMNDiagram_1">
     <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="happy">
       <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="StartEvent_1">
@@ -52,9 +60,6 @@
         <di:waypoint x="380" y="227" />
         <di:waypoint x="580" y="227" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNShape id="Activity_00ikxqg_di" bpmnElement="Activity_1pdki17">
-        <dc:Bounds x="280" y="187" width="100" height="80" />
-      </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Event_1bg23ez_di" bpmnElement="Event_1bg23ez">
         <dc:Bounds x="742" y="209" width="36" height="36" />
       </bpmndi:BPMNShape>
@@ -62,9 +67,6 @@
         <di:waypoint x="680" y="227" />
         <di:waypoint x="742" y="227" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNShape id="Activity_1optc9d_di" bpmnElement="Activity_05p1z73">
-        <dc:Bounds x="580" y="187" width="100" height="80" />
-      </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Event_0yaa6bj_di" bpmnElement="Event_1nhkr5j">
         <dc:Bounds x="362" y="169" width="36" height="36" />
       </bpmndi:BPMNShape>
@@ -84,6 +86,12 @@
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNShape id="Event_0sk95s1_di" bpmnElement="Event_1muk18m">
         <dc:Bounds x="152" y="112" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0duo5my_di" bpmnElement="Activity_1pdki17">
+        <dc:Bounds x="280" y="187" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1werr1u_di" bpmnElement="Activity_05p1z73">
+        <dc:Bounds x="580" y="187" width="100" height="80" />
       </bpmndi:BPMNShape>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>

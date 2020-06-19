@@ -30,6 +30,10 @@ class HazelcastVariableSerializer(
         return NAME
     }
 
+    override fun isMutableValue(typedValue: ObjectValue?): Boolean {
+        return super.isMutableValue(typedValue)
+    }
+
     override fun canWriteValue(value: TypedValue): Boolean {
         return if (isDeserializedObjectValue(value) || value is UntypedValueImpl) {
             value.value is HazelcastVariable

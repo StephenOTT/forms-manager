@@ -1,9 +1,7 @@
 package formsmanager.camunda.messagebuffer.processor
 
 import com.fasterxml.jackson.annotation.JsonIgnore
-import com.hazelcast.map.IMap
 import com.hazelcast.scheduledexecutor.IScheduledExecutorService
-import formsmanager.camunda.messagebuffer.CorrelationResult
 import formsmanager.camunda.messagebuffer.MessageRequest
 import formsmanager.camunda.messagebuffer.MessageWrapper
 import formsmanager.camunda.messagebuffer.repository.MessageBufferHazelcastRepository
@@ -19,7 +17,6 @@ import org.springframework.util.backoff.BackOffExecution
 import java.time.Instant
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
-import javax.inject.Named
 
 /**
  * Processes MessageWrapper objects / Messages for correlation.
@@ -52,11 +49,13 @@ class MessageProcessorTask(
     @Transient
     @Inject
     @JsonIgnore
-    @field:Named(MessageBufferHazelcastRepository.MAP_NAME)
-    lateinit var messages: IMap<String, MessageWrapper>
+    lateinit var messages: MessageBufferHazelcastRepository
+    //    @field:Named(MessageBufferHazelcastRepository.MAP_NAME)
+//    lateinit var messages: IMap<String, MessageWrapper>
 
     override fun run() {
-        val message: MessageWrapper? = messages[messageId]
+//        val message: MessageWrapper? = messages[messageId]
+        val message: MessageWrapper? = messages.get(messageId).blockingGet()
         //@TODO add better error handling
         requireNotNull(message)
 
@@ -89,7 +88,8 @@ class MessageProcessorTask(
                 message.addAttempt(attemptDate)
 
                 // Update the message in the
-                messages.replace(message.id.toMapKey(), message)
+//                messages.replace(message.id.toMapKey(), message)
+                messages.update(message.id.toMapKey(), message)
 
                 println("Retrying with delay: ${delay}")
                 messageProcessorRetryService.schedule<Unit>(MessageProcessorTask(messageId, exponentialBackoffConfiguration.copy(initialInterval = delay)), delay, TimeUnit.MILLISECONDS)
@@ -101,7 +101,7 @@ class MessageProcessorTask(
             val correlationData = kotlin.runCatching {
                 result.map {
                     val execution: String? = if (it.resultType == MessageCorrelationResultType.Execution) it.execution.id else null
-                    CorrelationResult(attemptDate,
+                    MessageWrapper.CorrelationResult(attemptDate,
                             it.resultType.name,
                             it.processInstance.processInstanceId,
                             execution)
@@ -111,7 +111,8 @@ class MessageProcessorTask(
             kotlin.runCatching {
                 message.addCorrelation(attemptDate, correlationData)
                 message.correlated()
-                messages.replace(message.id.toMapKey(), message)
+//                messages.replace(message.id.toMapKey(), message)
+                messages.update(message.id.toMapKey(), message)
             }.onFailure {
                 throw IllegalStateException("Unable to update message correlation data for ${message.id}. $message", it)
             }

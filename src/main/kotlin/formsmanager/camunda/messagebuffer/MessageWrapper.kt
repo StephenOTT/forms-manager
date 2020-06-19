@@ -41,6 +41,18 @@ data class MessageWrapper(
         CORRELATING, PAUSED, EXPIRED, CORRELATED
     }
 
+
+    /**
+     * Used to store the correlation details in the Message Buffer objects
+     */
+    data class CorrelationResult(
+            val correlatedOn: Instant,
+            val type: String,
+            val processInstanceId: String,
+            val executionId: String?
+    )
+
+
     fun expire() {
         this.state = State.EXPIRED
     }

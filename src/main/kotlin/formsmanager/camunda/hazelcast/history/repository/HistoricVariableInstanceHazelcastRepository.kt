@@ -28,7 +28,7 @@ interface HistoricHistoricVariableMapStoreRepository : MapStoreCrudRepository<St
 
 
 @Singleton
-class HistoricHistoricVariableInstanceToEntityTypeConverter : TypeConverter<HistoricVariableInstanceEntity, formsmanager.camunda.hazelcast.history.repository.HistoricVariableInstanceEntity> {
+class HistoricVariableInstanceToEntityTypeConverter : TypeConverter<HistoricVariableInstanceEntity, formsmanager.camunda.hazelcast.history.repository.HistoricVariableInstanceEntity> {
     override fun convert(`object`: HistoricVariableInstanceEntity, targetType: Class<formsmanager.camunda.hazelcast.history.repository.HistoricVariableInstanceEntity>, context: ConversionContext): Optional<formsmanager.camunda.hazelcast.history.repository.HistoricVariableInstanceEntity> {
 
         return Optional.of(HistoricVariableInstanceEntity(`object`.id, `object`::class.qualifiedName!!, `object`))

@@ -20,6 +20,7 @@ internal data class KryoContext(
         val outputChunked: OutputChunked
 )
 
+
 @Singleton
 @Requires(property = "kryo.enabled", value = StringUtils.TRUE)
 class KyroUtils(
@@ -31,8 +32,10 @@ class KyroUtils(
         kryo.isRegistrationRequired = cfg.classRegistrationRequired
         kryo.warnUnregisteredClasses = cfg.warnUnregisteredClasses
         kryo.instantiatorStrategy = DefaultInstantiatorStrategy(StdInstantiatorStrategy())
+
         return kryo
     }
+
 
     fun createOutputChunked(): OutputChunked {
         return OutputChunked(cfg.bufferSize)
