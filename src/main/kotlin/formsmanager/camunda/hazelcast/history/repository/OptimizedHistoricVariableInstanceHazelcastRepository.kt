@@ -39,7 +39,7 @@ class OptimizedHistoricVariableInstanceHazelcastRepository(
 ) : CamundaHistoricEventReactiveRepository<String, formsmanager.camunda.OptimizedHistoricVariableInstanceEntity> {
 
     companion object {
-        val MAP_NAME = "camunda-history-HistoricVariableInstance1"
+        val MAP_NAME = "camunda-history-HistoricVariableInstance"
     }
 
     override val handlerFor: Class<out HistoricEntity> = formsmanager.camunda.OptimizedHistoricVariableInstanceEntity::class.java

@@ -1,10 +1,11 @@
 package formsmanager.camunda.hazelcast.history
 
-import com.hazelcast.core.HazelcastInstance
 import formsmanager.camunda.OptimizedHistoricVariableInstanceEntity
 import formsmanager.camunda.hazelcast.history.repository.*
 import formsmanager.core.ifDebugEnabled
+import org.camunda.bpm.engine.ProcessEngine
 import org.camunda.bpm.engine.history.HistoricVariableInstance
+import org.camunda.bpm.engine.impl.cfg.ProcessEngineConfigurationImpl
 import org.camunda.bpm.engine.impl.context.Context
 import org.camunda.bpm.engine.impl.db.HistoricEntity
 import org.camunda.bpm.engine.impl.history.event.*
@@ -18,7 +19,6 @@ import javax.inject.Singleton
 
 @Singleton
 class HazelcastHistoryEventHandler(
-        private val hazelcastInstance: HazelcastInstance,
         private val historicActivityInstanceHazelcastRepository: HistoricActivityInstanceHazelcastRepository,
         private val historicCaseActivityInstanceHazelcastRepository: HistoricActivityInstanceHazelcastRepository,
         private val historicCaseInstanceHazelcastRepository: HistoricCaseInstanceHazelcastRepository,
@@ -31,9 +31,9 @@ class HazelcastHistoryEventHandler(
         private val historicProcessInstanceHazelcastRepository: HistoricProcessInstanceHazelcastRepository,
         private val historicTaskInstanceHazelcastRepository: HistoricTaskInstanceHazelcastRepository,
         private val historicUserOperationLogHazelcastRepository: HistoricUserOperationLogHazelcastRepository,
-        private val historicVariableInstanceHazelcastRepository: HistoricVariableInstanceHazelcastRepository,
         private val historicDecisionInstanceHazelcastRepository: HistoricDecisionInstanceHazelcastRepository,
-        private val optimizedHistoricVariableInstanceHazelcastRepository: OptimizedHistoricVariableInstanceHazelcastRepository
+        private val optimizedHistoricVariableInstanceHazelcastRepository: OptimizedHistoricVariableInstanceHazelcastRepository,
+        private val processEngine: ProcessEngine
 ) : HistoryEventHandler {
 
     private val log = LoggerFactory.getLogger(HazelcastHistoryEventHandler::class.java)
@@ -62,11 +62,14 @@ class HazelcastHistoryEventHandler(
 
     )
 
+    /**
+     * Get the repository for the specific HistoricEntity
+     */
+    @Suppress("UNCHECKED_CAST")
     private fun <T : HistoricEntity> getHistoryMap(clazz: Class<out T>): CamundaHistoricEventReactiveRepository<String, T> {
         log.ifDebugEnabled { "Looking for HistoryMap class: ${clazz.canonicalName}" }
         return historyMaps.filterKeys { it == clazz }.entries.single().value as CamundaHistoricEventReactiveRepository<String, T>
     }
-
 
     override fun handleEvent(historyEvent: HistoryEvent) {
         when (historyEvent) {
@@ -99,8 +102,6 @@ class HazelcastHistoryEventHandler(
 
         map.create(historicDecisionInstance.id, historicDecisionInstance).blockingGet()
         // Dont need the nested objects because we can save it as a single object and query on it later.!! :)
-
-
 //        insertHistoricDecisionInputInstances(historicDecisionInstance.inputs, historicDecisionInstance.id)
 //        insertHistoricDecisionOutputInstances(historicDecisionInstance.outputs, historicDecisionInstance.id)
     }
@@ -114,7 +115,7 @@ class HazelcastHistoryEventHandler(
 //        }
 //    }
 //
-    // not needed
+    // Not needed:
 //    protected fun insertHistoricDecisionOutputInstances(outputs: List<HistoricDecisionOutputInstance>, decisionInstanceId: String?) {
 //        for (output in outputs) {
 //            val outputEntity = output as HistoricDecisionOutputInstanceEntity
@@ -137,7 +138,7 @@ class HazelcastHistoryEventHandler(
         if (shouldWriteHistoricDetail(historyEvent)) {
             val map = getHistoryMap(HistoricDetailEventEntity::class.java)
                 if (historyEvent.id == null){
-                    historyEvent.id = Context.getCommandContext().processEngineConfiguration.idGenerator.nextId
+                    historyEvent.id = (processEngine.processEngineConfiguration as ProcessEngineConfigurationImpl).idGenerator.nextId
                 }
             // If its a Historic Detail, then just add it
             map.create(historyEvent.id, historyEvent).blockingGet()
@@ -145,7 +146,7 @@ class HazelcastHistoryEventHandler(
 
         // always insert/update HistoricProcessVariableInstance
         if (historyEvent.isEventOfType(HistoryEventTypes.VARIABLE_INSTANCE_CREATE)) {
-//            val map = getHistoryMap(HistoricVariableInstanceEntity::class.java)
+
             val map = getHistoryMap(OptimizedHistoricVariableInstanceEntity::class.java)
             val persistentObject0 = HistoricVariableInstanceEntity(historyEvent)
 
@@ -178,15 +179,11 @@ class HazelcastHistoryEventHandler(
             )
 
             map.create(persistentObject.id, persistentObject).blockingGet()
-//            map[persistentObject.id] = persistentObject
-
 
         } else if (historyEvent.isEventOfType(HistoryEventTypes.VARIABLE_INSTANCE_UPDATE)
                 || historyEvent.isEventOfType(HistoryEventTypes.VARIABLE_INSTANCE_MIGRATE)) {
 
-//            val map = getHistoryMap(HistoricVariableInstanceEntity::class.java)
             val map = getHistoryMap(OptimizedHistoricVariableInstanceEntity::class.java)
-//            val historicVariableInstanceEntity = map[historyEvent.variableInstanceId]
             val historicVariableInstanceEntity = map.get(historyEvent.variableInstanceId).blockingGet()
             checkNotNull(historicVariableInstanceEntity) {
                 "Unable to find historic variable instance with ID: ${historyEvent.variableInstanceId}.  ${historyEvent}"
@@ -221,13 +218,11 @@ class HazelcastHistoryEventHandler(
                     typedValue = persistentObject0.getTypedValue(true).value,
                     typedValueClass = persistentObject0.typedValue.type.name)
 
-//            map.replace(persistentObject.id, persistentObject)
             map.update(persistentObject.id, persistentObject).blockingGet()
 
         } else if (historyEvent.isEventOfType(HistoryEventTypes.VARIABLE_INSTANCE_DELETE)) {
             val map = getHistoryMap(HistoricVariableInstanceEntity::class.java)
-//
-//            val historicVariableInstanceEntity = map[historyEvent.variableInstanceId]
+
             val historicVariableInstanceEntity = map.get(historyEvent.variableInstanceId).blockingGet()
 
             checkNotNull(historicVariableInstanceEntity) {
@@ -236,7 +231,6 @@ class HazelcastHistoryEventHandler(
 
             historicVariableInstanceEntity.state = HistoricVariableInstance.STATE_DELETED
 
-//            map.replace(historicVariableInstanceEntity.id, historicVariableInstanceEntity)
             map.update(historicVariableInstanceEntity.id, historicVariableInstanceEntity).blockingGet()
         }
     }
@@ -253,16 +247,13 @@ class HazelcastHistoryEventHandler(
         val map = getHistoryMap(historyEvent::class.java)
 
         if (isInitialEvent(historyEvent)) {
-//            map[historyEvent.id] = historyEvent
 
             if (historyEvent.id == null){
-                //@TOOD REVIEW WHY THIS IS NEEDED.....
-                historyEvent.id = Context.getCommandContext().processEngineConfiguration.idGenerator.nextId
+                historyEvent.id = (processEngine.processEngineConfiguration as ProcessEngineConfigurationImpl).idGenerator.nextId
             }
             map.create(historyEvent.id, historyEvent).blockingGet()
 
         } else {
-//            val existingEvent = map[historyEvent.id]
             val existingEvent = map.get(historyEvent.id).blockingGet()
 
             checkNotNull(existingEvent) {
