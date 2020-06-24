@@ -113,7 +113,6 @@ interface CustomBusinessCalendar {
         }
 
         fun isMonth(vararg dates: Month): Predicate<ZonedDateTime> {
-
             return Predicate { submission -> dates.all { Month.from(submission) == it } }
         }
 

@@ -334,3 +334,44 @@ Dynamics:
 1. Tenant
 1. BU membership
 1. Process Instance
+
+
+
+# Workflowic
+
+Workflow for the workaholic
+
+Real world business problems with real world workflow solutions
+ 
+
+
+1. Forms Manager
+   1. Form Schemas Storage and Management
+   1. Apply a Form Schema to a BPMN Form key
+   1. BPMN Start Event Forms Support
+   1. BPMN User Task Forms Support
+   1. Submit data
+1. Camunda Workflow Engine
+   1. Reactive External Tasks
+   1. Hazelcast History Event Provider
+   1. Micronaut Context
+   1. Message Buffer
+   1. Shiro Security (optional)
+   1. Hazelcast backed variables
+   1. Camunda Extensions Properties Caching and API
+   1. Business Calendar Support
+   
+1. Hazelcast Data Grid + Hazelcast Jet
+   1. Store any entity as native object and let hazelcast store it in the DB for you!
+   1. Distributed Queries
+   1. Repository Interfaces for Hazelcast Map access: Store your data like a regular Data Repository interface
+1. Query API: use SQL Where Query Syntax for query of objects and json data.
+   1. Query Camunda History Data
+   1. Query All objects in the platform.
+1. Shiro Security
+   1. Groups, Roles, Permissions
+   1. JWT Security
+1. Multi-Tenancy
+1. Services
+1. Business Units
+1.
